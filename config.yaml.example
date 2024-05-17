@@ -1,0 +1,36 @@
+project_id: "eoapi-yo"
+stage: "production"
+tags: {owner: user_a}
+
+# Ingest Options
+auth_provider_jwks_url: 'https://auth.io'
+data_access_role_arn: 'arn:...'
+
+# Database Options
+db_instance_type: 't3.micro'
+db_allocated_storage: 5
+public_db_subnet: False
+
+# VPC Options
+nat_gateway_count: 4
+
+# Bastion Host Options
+bastion_host: True
+bastion_host_create_elastic_ip: True
+bastion_host_allow_ip_list:
+  - 'http://0.0.0.0'
+bastion_host_user_data: 'path/file.txt'
+
+# Raster Options
+raster_buckets:
+  - 'raster-east'
+
+# STAC Browser Options
+stac_browser_version: '0.1.0'
+
+# API Gateway Options
+acm_certificate_arn: 'arn:...'
+stac_api_custom_domain: 'https://stac.api'
+raster_api_custom_domain: 'https://raster.api'
+vector_api_custom_domain: 'https://vector.api'
+stac_ingestor_api_custom_domain: 'https://ingestor.api'
