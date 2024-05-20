@@ -63,4 +63,4 @@ jobs:
         run: python -m pytest .github/workflows/tests/
 
       - name: Stop services
-        run: docker compose -f docker-compose.custom.yml  stop
+        run: docker compose stop
