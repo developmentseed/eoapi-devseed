@@ -79,6 +79,10 @@ class AppConfig(BaseSettings):
         buckets to grant access to the Raster API""",
         default=[],
     )
+    stac_ingestor: bool = Field(
+        description="Whether to add STAC Ingestor services, Default is False",
+        default=False,
+    )
     acm_certificate_arn: Optional[str] = Field(
         description="""ARN of ACM certificate to use for
         custom domain names. If provided,
@@ -113,7 +117,9 @@ class AppConfig(BaseSettings):
         default=None,
     )
 
-    model_config = SettingsConfigDict(env_file=".env", yaml_file="config.yaml")
+    model_config = SettingsConfigDict(
+        env_file=".env", yaml_file="config.yaml", extra="allow"
+    )
 
     @field_validator("tags")
     def default_tags(cls, v, info: ValidationInfo):

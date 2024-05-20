@@ -1,0 +1,66 @@
+name: CI
+
+# On every pull request, but only on push to main
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+    paths:
+      - 'runtimes/**'
+      - 'docker-compose.*'
+      - '.github/workflows/ci.yml'
+      - '.pre-commit-config.yaml'
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run pre-commit
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pre-commit
+          pre-commit run --all-files
+
+      - name: Launch services
+        run: docker compose up -d
+
+      - name: install lib postgres
+        uses: nyurik/action-setup-postgis@v1
+
+      - name: Install python dependencies
+        run: |
+          python -m pip install pytest httpx pypgstac==0.8.5 psycopg[pool]
+
+      - name: Ingest Stac Items/Collection
+        run: |
+          pypgstac pgready --dsn postgresql://username:password@0.0.0.0:5439/postgis
+          pypgstac load collections .github/workflows/data/noaa-emergency-response.json --dsn postgresql://username:password@0.0.0.0:5439/postgis --method insert_ignore
+          pypgstac load items .github/workflows/data/noaa-eri-nashville2020.json --dsn postgresql://username:password@0.0.0.0:5439/postgis --method insert_ignore
+          psql postgresql://username:password@0.0.0.0:5439/postgis -f .github/workflows/data/my_data.sql
+
+      # see https://github.com/developmentseed/tipg/issues/37
+      - name: Restart the Vector service
+        run: |
+          docker compose stop vector
+          docker compose up -d vector
+
+      - name: Sleep for 10 seconds
+        run: sleep 10s
+        shell: bash
+
+      - name: Integrations tests
+        run: python -m pytest .github/workflows/tests/
+
+      - name: Stop services
+        run: docker compose stop
