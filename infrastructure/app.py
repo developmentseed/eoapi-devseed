@@ -1,3 +1,5 @@
+import os
+
 import boto3
 import yaml
 from aws_cdk import (
@@ -7,12 +9,13 @@ from aws_cdk import (
     aws_certificatemanager,
     aws_ec2,
     aws_iam,
+    aws_lambda,
     aws_rds,
     aws_s3,
 )
 from aws_cdk.aws_apigateway import DomainNameOptions
 from aws_cdk.aws_apigatewayv2_alpha import DomainName
-from config import AppConfig, build_app_config
+from config import AppConfig
 from constructs import Construct
 from eoapi_cdk import (
     BastionHost,
@@ -85,6 +88,7 @@ class eoAPIStack(Stack):
         vpc: aws_ec2.Vpc,
         id: str,
         app_config: AppConfig,
+        context_dir: str = "./",
         **kwargs,
     ) -> None:
         super().__init__(
@@ -113,52 +117,36 @@ class eoAPIStack(Stack):
             allocated_storage=app_config.db_allocated_storage,
             instance_type=aws_ec2.InstanceType(app_config.db_instance_type),
             removal_policy=RemovalPolicy.DESTROY,
+            custom_resource_properties={
+                "context": True,
+                "mosaic_index": True,
+            },
         )
         pgstac_db.db.connections.allow_default_port_from_any_ipv4()
 
         #######################################################################
-        # STAC API service
-        stac_api_lambda = PgStacApiLambda(
-            self,
-            "stac-api",
-            api_env={
-                "NAME": app_config.build_service_name("stac"),
-                "description": f"{app_config.stage} STAC API",
-            },
-            db=pgstac_db.db,
-            db_secret=pgstac_db.pgstac_secret,
-            # If the db is not in the public subnet then we need to put
-            # the lambda within the VPC
-            vpc=vpc if not app_config.public_db_subnet else None,
-            subnet_selection=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
-            )
-            if not app_config.public_db_subnet
-            else None,
-            stac_api_domain_name=(
-                DomainName(
-                    self,
-                    "stac-api-domain-name",
-                    domain_name=app_config.stac_api_custom_domain,
-                    certificate=aws_certificatemanager.Certificate.from_certificate_arn(
-                        self,
-                        "stac-api-cdn-certificate",
-                        certificate_arn=app_config.acm_certificate_arn,
-                    ),
-                )
-                if app_config.stac_api_custom_domain
-                else None
-            ),
-        )
-
-        #######################################################################
         # Raster service
-        TitilerPgstacApiLambda(
+        raster = TitilerPgstacApiLambda(
             self,
             "raster-api",
             api_env={
-                "NAME": app_config.build_service_name("raster"),
+                "EOAPI_RASTER_NAME": app_config.build_service_name("raster"),
                 "description": f"{app_config.stage} Raster API",
+                "POSTGRES_HOST": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "host"
+                ).to_string(),
+                "POSTGRES_DBNAME": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "dbname"
+                ).to_string(),
+                "POSTGRES_USER": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "username"
+                ).to_string(),
+                "POSTGRES_PASS": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "password"
+                ).to_string(),
+                "POSTGRES_PORT": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "port"
+                ).to_string(),
             },
             db=pgstac_db.db,
             db_secret=pgstac_db.pgstac_secret,
@@ -185,6 +173,84 @@ class eoAPIStack(Stack):
                 if app_config.raster_api_custom_domain
                 else None
             ),
+            lambda_function_options={
+                "code": aws_lambda.Code.from_docker_build(
+                    path=os.path.abspath(context_dir),
+                    file="infrastructure/dockerfiles/Dockerfile.raster",
+                    build_args={
+                        "PYTHON_VERSION": "3.11",
+                    },
+                    platform="linux/amd64",
+                ),
+                "handler": "handler.handler",
+                "runtime": aws_lambda.Runtime.PYTHON_3_11,
+            },
+        )
+
+        #######################################################################
+        # STAC API service
+        stac = PgStacApiLambda(
+            self,
+            "stac-api",
+            api_env={
+                "EOAPI_STAC_NAME": app_config.build_service_name("stac"),
+                "description": f"{app_config.stage} STAC API",
+                "POSTGRES_HOST_READER": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "host"
+                ).to_string(),
+                "POSTGRES_HOST_WRITER": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "host"
+                ).to_string(),
+                "POSTGRES_DBNAME": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "dbname"
+                ).to_string(),
+                "POSTGRES_USER": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "username"
+                ).to_string(),
+                "POSTGRES_PASS": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "password"
+                ).to_string(),
+                "POSTGRES_PORT": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "port"
+                ).to_string(),
+                "EOAPI_STAC_TITILER_ENDPOINT": raster.url.strip("/"),
+            },
+            db=pgstac_db.db,
+            db_secret=pgstac_db.pgstac_secret,
+            # If the db is not in the public subnet then we need to put
+            # the lambda within the VPC
+            vpc=vpc if not app_config.public_db_subnet else None,
+            subnet_selection=aws_ec2.SubnetSelection(
+                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+            )
+            if not app_config.public_db_subnet
+            else None,
+            stac_api_domain_name=(
+                DomainName(
+                    self,
+                    "stac-api-domain-name",
+                    domain_name=app_config.stac_api_custom_domain,
+                    certificate=aws_certificatemanager.Certificate.from_certificate_arn(
+                        self,
+                        "stac-api-cdn-certificate",
+                        certificate_arn=app_config.acm_certificate_arn,
+                    ),
+                )
+                if app_config.stac_api_custom_domain
+                else None
+            ),
+            lambda_function_options={
+                "code": aws_lambda.Code.from_docker_build(
+                    path=os.path.abspath(context_dir),
+                    file="infrastructure/dockerfiles/Dockerfile.stac",
+                    build_args={
+                        "PYTHON_VERSION": "3.11",
+                    },
+                    platform="linux/amd64",
+                ),
+                "handler": "handler.handler",
+                "runtime": aws_lambda.Runtime.PYTHON_3_11,
+            },
         )
 
         #######################################################################
@@ -195,8 +261,23 @@ class eoAPIStack(Stack):
             db=pgstac_db.db,
             db_secret=pgstac_db.pgstac_secret,
             api_env={
-                "NAME": app_config.build_service_name("vector"),
+                "EOAPI_VECTOR_NAME": app_config.build_service_name("vector"),
                 "description": f"{app_config.stage} tipg API",
+                "POSTGRES_HOST": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "host"
+                ).to_string(),
+                "POSTGRES_DBNAME": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "dbname"
+                ).to_string(),
+                "POSTGRES_USER": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "username"
+                ).to_string(),
+                "POSTGRES_PASS": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "password"
+                ).to_string(),
+                "POSTGRES_PORT": pgstac_db.pgstac_secret.secret_value_from_json(
+                    "port"
+                ).to_string(),
             },
             # If the db is not in the public subnet then we need to put
             # the lambda within the VPC
@@ -220,56 +301,76 @@ class eoAPIStack(Stack):
                 if app_config.vector_api_custom_domain
                 else None
             ),
+            lambda_function_options={
+                "code": aws_lambda.Code.from_docker_build(
+                    path=os.path.abspath(context_dir),
+                    file="infrastructure/dockerfiles/Dockerfile.vector",
+                    build_args={
+                        "PYTHON_VERSION": "3.11",
+                    },
+                    platform="linux/amd64",
+                ),
+                "handler": "handler.handler",
+                "runtime": aws_lambda.Runtime.PYTHON_3_11,
+            },
         )
 
-        #######################################################################
-        # STAC Ingestor Service
-        if app_config.data_access_role_arn:
-            # importing provided role from arn.
-            # the stac ingestor will try to assume it when called,
-            # so it must be listed in the data access role trust policy.
-            data_access_role = aws_iam.Role.from_role_arn(
-                self,
-                "data-access-role",
-                role_arn=app_config.data_access_role_arn,
-            )
-        else:
-            data_access_role = self._create_data_access_role()
-
-        stac_ingestor_env = {"REQUESTER_PAYS": "True"}
-        if app_config.auth_provider_jwks_url:
-            stac_ingestor_env["JWKS_URL"] = app_config.auth_provider_jwks_url
-
-        stac_ingestor = StacIngestor(
-            self,
-            "stac-ingestor",
-            stac_url=stac_api_lambda.url,
-            stage=app_config.stage,
-            data_access_role=data_access_role,
-            stac_db_secret=pgstac_db.pgstac_secret,
-            stac_db_security_group=pgstac_db.db.connections.security_groups[0],
-            # If the db is not in the public subnet then we need to put
-            # the lambda within the VPC
-            vpc=vpc if not app_config.public_db_subnet else None,
-            subnet_selection=aws_ec2.SubnetSelection(
-                subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
-            )
-            if not app_config.public_db_subnet
-            else None,
-            api_env=stac_ingestor_env,
-            ingestor_domain_name_options=(
-                DomainNameOptions(
-                    domain_name=app_config.stac_ingestor_api_custom_domain,
-                    certificate=aws_certificatemanager.Certificate.from_certificate_arn(
-                        self,
-                        "stac-ingestor-api-cdn-certificate",
-                        certificate_arn=app_config.acm_certificate_arn,
-                    ),
+        if app_config.stac_ingestor:
+            #######################################################################
+            # STAC Ingestor Service
+            if app_config.data_access_role_arn:
+                # importing provided role from arn.
+                # the stac ingestor will try to assume it when called,
+                # so it must be listed in the data access role trust policy.
+                data_access_role = aws_iam.Role.from_role_arn(
+                    self,
+                    "data-access-role",
+                    role_arn=app_config.data_access_role_arn,
                 )
-                if app_config.stac_ingestor_api_custom_domain
-                else None
-            ),
-        )
+            else:
+                data_access_role = self._create_data_access_role()
+
+            stac_ingestor_env = {"REQUESTER_PAYS": "True"}
+            if app_config.auth_provider_jwks_url:
+                stac_ingestor_env["JWKS_URL"] = app_config.auth_provider_jwks_url
+
+            stac_ingestor = StacIngestor(
+                self,
+                "stac-ingestor",
+                stac_url=stac.url,
+                stage=app_config.stage,
+                data_access_role=data_access_role,
+                stac_db_secret=pgstac_db.pgstac_secret,
+                stac_db_security_group=pgstac_db.db.connections.security_groups[0],
+                # If the db is not in the public subnet then we need to put
+                # the lambda within the VPC
+                vpc=vpc if not app_config.public_db_subnet else None,
+                subnet_selection=aws_ec2.SubnetSelection(
+                    subnet_type=aws_ec2.SubnetType.PRIVATE_WITH_EGRESS
+                )
+                if not app_config.public_db_subnet
+                else None,
+                api_env=stac_ingestor_env,
+                ingestor_domain_name_options=(
+                    DomainNameOptions(
+                        domain_name=app_config.stac_ingestor_api_custom_domain,
+                        certificate=aws_certificatemanager.Certificate.from_certificate_arn(
+                            self,
+                            "stac-ingestor-api-cdn-certificate",
+                            certificate_arn=app_config.acm_certificate_arn,
+                        ),
+                    )
+                    if app_config.stac_ingestor_api_custom_domain
+                    else None
+                ),
+            )
+            # we can only do that if the role is created here.
+            # If injecting a role, that role's trust relationship
+            # must be already set up, or set up after this deployment.
+            if not app_config.data_access_role_arn:
+                data_access_role = self._grant_assume_role_with_principal_pattern(
+                    data_access_role, stac_ingestor.handler_role.role_name
+                )
 
         #######################################################################
         # Bastion Host
@@ -314,14 +415,6 @@ class eoAPIStack(Stack):
                 stac_catalog_url=f"https://{app_config.stac_api_custom_domain}",
                 website_index_document="index.html",
                 bucket_arn=stac_browser_bucket.bucket_arn,
-            )
-
-        # we can only do that if the role is created here.
-        # If injecting a role, that role's trust relationship
-        # must be already set up, or set up after this deployment.
-        if not app_config.data_access_role_arn:
-            data_access_role = self._grant_assume_role_with_principal_pattern(
-                data_access_role, stac_ingestor.handler_role.role_name
             )
 
     def _create_data_access_role(self) -> aws_iam.Role:
@@ -378,7 +471,7 @@ class eoAPIStack(Stack):
 
 app = App()
 
-app_config = build_app_config()
+app_config = AppConfig()
 
 vpc_stack = VpcStack(
     scope=app,
