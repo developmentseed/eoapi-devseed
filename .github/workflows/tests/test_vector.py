@@ -7,9 +7,6 @@ vector_endpoint = "http://0.0.0.0:8083"
 
 def test_vector_api():
     """test vector."""
-    # make sure that catalog is Up to Date
-    _ = httpx.get(f"{vector_endpoint}/refresh")
-
     # landing
     resp = httpx.get(f"{vector_endpoint}/")
     assert resp.status_code == 200
