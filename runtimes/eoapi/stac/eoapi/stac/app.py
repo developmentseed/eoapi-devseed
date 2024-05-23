@@ -40,7 +40,7 @@ except ImportError:
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
 api_settings = ApiSettings()
-settings = Settings()
+settings = Settings(enable_response_models=True)
 
 extensions_map = {
     "transaction": TransactionExtension(
@@ -92,7 +92,13 @@ if api_settings.cors_origins:
     )
 
 api = StacApi(
-    app=FastAPI(title=api_settings.name, lifespan=lifespan),
+    app=FastAPI(
+        title=api_settings.name,
+        lifespan=lifespan,
+        openapi_url="/api",
+        docs_url="/api.html",
+        redoc_url=None,
+    ),
     title=api_settings.name,
     description=api_settings.name,
     settings=settings,
@@ -104,18 +110,6 @@ api = StacApi(
     middlewares=middlewares,
 )
 app = api.app
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Connect to database on startup."""
-    await connect_to_db(app)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Close database connection."""
-    await close_db_connection(app)
 
 
 if api_settings.titiler_endpoint:

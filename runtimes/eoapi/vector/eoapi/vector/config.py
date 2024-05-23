@@ -18,7 +18,7 @@ class ApiSettings(BaseSettings):
 
     model_config = {
         "env_prefix": "EOAPI_VECTOR_",
-        "env_file": ".env-local",
+        "env_file": ".env",
         "extra": "allow",
     }
 

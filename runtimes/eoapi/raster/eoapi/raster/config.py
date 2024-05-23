@@ -16,7 +16,7 @@ class ApiSettings(BaseSettings):
 
     model_config = {
         "env_prefix": "EOAPI_RASTER_",
-        "env_file": ".env-local",
+        "env_file": ".env",
         "extra": "allow",
     }
 

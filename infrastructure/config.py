@@ -118,7 +118,7 @@ class AppConfig(BaseSettings):
     )
 
     model_config = SettingsConfigDict(
-        env_file=".env", yaml_file="config.yaml", extra="allow"
+        env_file=".env-cdk", yaml_file="config.yaml", extra="allow"
     )
 
     @field_validator("tags")
