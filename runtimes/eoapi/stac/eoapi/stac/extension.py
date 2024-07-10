@@ -10,11 +10,14 @@ from stac_fastapi.types.extension import ApiExtension
 from starlette.requests import Request
 
 
-@attr.s
+@attr.s(kw_only=True)
 class TiTilerExtension(ApiExtension):
     """TiTiler extension."""
 
-    def register(self, app: FastAPI, titiler_endpoint: str) -> None:
+    titiler_endpoint: str = attr.ib()
+    router: APIRouter = attr.ib(factory=APIRouter)
+
+    def register(self, app: FastAPI) -> None:
         """Register the extension with a FastAPI application.
         Args:
             app: target FastAPI application.
@@ -22,15 +25,15 @@ class TiTilerExtension(ApiExtension):
             None
 
         """
-        router = APIRouter()
+        self.router.prefix = app.state.router_prefix
 
-        @router.get(
-            "/collections/{collectionId}/items/{itemId}/tilejson.json",
+        @self.router.get(
+            "/collections/{collection_id}/items/{item_id}/tilejson.json",
         )
         async def tilejson(
             request: Request,
-            collectionId: str = Path(..., description="Collection ID"),
-            itemId: str = Path(..., description="Item ID"),
+            collection_id: str = Path(description="Collection ID"),
+            item_id: str = Path(description="Item ID"),
             tile_format: Optional[str] = Query(
                 None, description="Output image type. Default is auto."
             ),
@@ -75,11 +78,11 @@ class TiTilerExtension(ApiExtension):
                 if key.lower() not in qs_key_to_remove
             ]
             return RedirectResponse(
-                f"{titiler_endpoint}/collections/{collectionId}/items/{itemId}/tilejson.json?{urlencode(qs)}"
+                f"{self.titiler_endpoint}/collections/{collection_id}/items/{item_id}/tilejson.json?{urlencode(qs)}"
             )
 
-        @router.get(
-            "/collections/{collectionId}/items/{itemId}/viewer",
+        @self.router.get(
+            "/collections/{collection_id}/items/{item_id}/viewer",
             responses={
                 200: {
                     "description": "Redirect to TiTiler STAC viewer.",
@@ -89,15 +92,15 @@ class TiTilerExtension(ApiExtension):
         )
         async def stac_viewer(
             request: Request,
-            collectionId: str = Path(..., description="Collection ID"),
-            itemId: str = Path(..., description="Item ID"),
+            collection_id: str = Path(description="Collection ID"),
+            item_id: str = Path(description="Item ID"),
         ):
             """Get items and redirect to stac tiler."""
             qs = [(key, value) for (key, value) in request.query_params._list]
-            url = f"{titiler_endpoint}/collections/{collectionId}/items/{itemId}/viewer"
+            url = f"{self.titiler_endpoint}/collections/{collection_id}/items/{item_id}/viewer"
             if qs:
                 url += f"?{urlencode(qs)}"
 
             return RedirectResponse(url)
 
-        app.include_router(router, tags=["TiTiler Extension"])
+        app.include_router(self.router, tags=["TiTiler Extension"])

@@ -7,7 +7,12 @@ from eoapi.stac.extension import TiTilerExtension
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
-from stac_fastapi.api.models import create_get_request_model, create_post_request_model
+from stac_fastapi.api.models import (
+    ItemCollectionUri,
+    create_get_request_model,
+    create_post_request_model,
+    create_request_model,
+)
 from stac_fastapi.extensions.core import (
     FieldsExtension,
     FilterExtension,
@@ -42,6 +47,7 @@ templates = Jinja2Templates(directory=str(resources_files(__package__) / "templa
 api_settings = ApiSettings()
 settings = Settings(enable_response_models=True)
 
+# Extensions
 extensions_map = {
     "transaction": TransactionExtension(
         client=TransactionsClient(),
@@ -54,7 +60,17 @@ extensions_map = {
     "pagination": TokenPaginationExtension(),
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
+    "titiler": TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint),
 }
+
+if enabled_extensions := api_settings.extensions:
+    extensions = [
+        extensions_map.get(name)
+        for name in enabled_extensions
+        if name in extensions_map
+    ]
+else:
+    extensions = list(extensions_map.values())
 
 
 @asynccontextmanager
@@ -67,18 +83,7 @@ async def lifespan(app: FastAPI):
     await close_db_connection(app)
 
 
-if enabled_extensions := api_settings.extensions:
-    extensions = [
-        extensions_map.get(name)
-        for name in enabled_extensions
-        if name in extensions_map
-    ]
-else:
-    extensions = list(extensions_map.values())
-
-GETModel = create_get_request_model(extensions)
-POSTModel = create_post_request_model(extensions, base_model=PgstacSearch)
-
+# Middlewares
 middlewares = [Middleware(CompressionMiddleware)]
 if api_settings.cors_origins:
     middlewares.append(
@@ -90,6 +95,19 @@ if api_settings.cors_origins:
             allow_headers=["*"],
         )
     )
+
+# Custom Models
+items_get_model = ItemCollectionUri
+if any(isinstance(ext, TokenPaginationExtension) for ext in extensions):
+    items_get_model = create_request_model(
+        model_name="ItemCollectionUri",
+        base_model=ItemCollectionUri,
+        mixins=[TokenPaginationExtension().GET],
+        request_type="GET",
+    )
+
+search_get_model = create_get_request_model(extensions)
+search_post_model = create_post_request_model(extensions, base_model=PgstacSearch)
 
 api = StacApi(
     app=FastAPI(
@@ -103,19 +121,14 @@ api = StacApi(
     description=api_settings.name,
     settings=settings,
     extensions=extensions,
-    client=CoreCrudClient(post_request_model=POSTModel),
-    search_get_request_model=GETModel,
-    search_post_request_model=POSTModel,
+    client=CoreCrudClient(post_request_model=search_post_model),
+    items_get_request_model=items_get_model,
+    search_get_request_model=search_get_model,
+    search_post_request_model=search_post_model,
     response_class=ORJSONResponse,
     middlewares=middlewares,
 )
 app = api.app
-
-
-if api_settings.titiler_endpoint:
-    # Register to the TiTiler extension to the api
-    extension = TiTilerExtension()
-    extension.register(api.app, api_settings.titiler_endpoint)
 
 
 @app.get("/index.html", response_class=HTMLResponse)
