@@ -23,6 +23,8 @@ class ApiSettings(BaseSettings):
         "sort",
         "fields",
         "pagination",
+        "titiler",
+        "transaction",
     ]
 
     @field_validator("cors_origins")
