@@ -142,3 +142,73 @@ async def viewer_page(request: Request):
         },
         media_type="text/html",
     )
+
+if settings.jwks_url:
+    jwks_client = jwt.PyJWKClient(settings.jwks_url)  # Caches JWKS
+
+    # Setup auth requirements
+    oauth2_scheme = (
+        security.OAuth2AuthorizationCodeBearer(
+            authorizationUrl=f"{settings.oauth2_authorization_url}",
+            tokenUrl=f"{settings.oauth2_token_url}",
+            scopes={
+                # NOTE: Add requested scopes here if needed...
+            },
+        )
+        if (settings.oauth2_authorization_url and settings.oauth2_token_url)
+        else security.HTTPAuthorizationCredentials()
+    )
+
+
+    def user_token(
+        token_str: Annotated[str, Security(oauth2_scheme)],
+        required_scopes: security.SecurityScopes,
+    ):
+        # Parse & validate token
+        try:
+            payload = jwt.decode(
+                token_str,
+                jwks_client.get_signing_key_from_jwt(token_str).key,
+                algorithms=["RS256"],
+                audience=settings.permitted_jwt_audiences,
+            )
+        except jwt.exceptions.InvalidTokenError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Could not validate credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            ) from e
+
+        # Validate scopes (if required)
+        for scope in required_scopes.scopes:
+            if scope not in payload["scope"]:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not enough permissions",
+                    headers={
+                        "WWW-Authenticate": f'Bearer scope="{required_scopes.scope_str}"'
+                    },
+                )
+
+        return payload
+
+
+    # Add dependency to all endpoints that create, modify or delete data.
+    api.add_route_dependencies(
+        [
+            {
+                "path": path,
+                "method": method,
+                "type": "http",
+            }
+            for method in ["POST", "PUT", "DELETE"]
+            for path in [
+                "/collections",
+                "/collections/{collectionId}",
+                "/collections/{collectionId}/items",
+                "/collections/{collectionId}/bulk_items",
+                "/collections/{collectionId}/items/{itemId}",
+            ]
+        ],
+        [Security(user_token, scopes=[])],  # NOTE: Add required scopes here if desired...
+    )
