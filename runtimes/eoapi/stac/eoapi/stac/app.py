@@ -3,6 +3,7 @@
 from contextlib import asynccontextmanager
 from typing import Annotated
 
+import jwt
 from eoapi.stac.config import ApiSettings
 from eoapi.stac.extension import TiTilerExtension
 from fastapi import FastAPI, HTTPException, security, status
@@ -35,7 +36,6 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
-import jwt
 
 try:
     from importlib.resources import files as resources_files  # type: ignore

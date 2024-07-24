@@ -14,10 +14,10 @@ class ApiSettings(BaseSettings):
     cors_methods: str = "GET,POST,OPTIONS"
     cachecontrol: str = "public, max-age=3600"
     debug: bool = False
-    
+
     jwks_url: Optional[str] = None
-    oauth2_token_url: Optional[str] = None 
-    oauth2_authorization_url: Optional[str] = None 
+    oauth2_token_url: Optional[str] = None
+    oauth2_authorization_url: Optional[str] = None
 
     titiler_endpoint: Optional[str] = None
 
