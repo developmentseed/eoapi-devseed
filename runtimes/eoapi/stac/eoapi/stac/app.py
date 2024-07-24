@@ -1,10 +1,11 @@
 """eoapi.stac app."""
 
 from contextlib import asynccontextmanager
+from typing import Annotated
 
 from eoapi.stac.config import ApiSettings
 from eoapi.stac.extension import TiTilerExtension
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, security, status
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (
@@ -34,6 +35,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
+import jwt
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -143,6 +145,7 @@ async def viewer_page(request: Request):
         media_type="text/html",
     )
 
+
 if settings.jwks_url:
     jwks_client = jwt.PyJWKClient(settings.jwks_url)  # Caches JWKS
 
@@ -159,9 +162,8 @@ if settings.jwks_url:
         else security.HTTPAuthorizationCredentials()
     )
 
-
     def user_token(
-        token_str: Annotated[str, Security(oauth2_scheme)],
+        token_str: Annotated[str, security.Security(oauth2_scheme)],
         required_scopes: security.SecurityScopes,
     ):
         # Parse & validate token
@@ -192,7 +194,6 @@ if settings.jwks_url:
 
         return payload
 
-
     # Add dependency to all endpoints that create, modify or delete data.
     api.add_route_dependencies(
         [
@@ -210,5 +211,8 @@ if settings.jwks_url:
                 "/collections/{collectionId}/items/{itemId}",
             ]
         ],
-        [Security(user_token, scopes=[])],  # NOTE: Add required scopes here if desired...
+        [
+            # NOTE: Add required scopes here if desired...
+            security.Security(user_token, scopes=[])
+        ],
     )
