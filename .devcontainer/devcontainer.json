@@ -1,0 +1,26 @@
+{
+    "name": "EOAPI Development Container",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "stac-browser",
+    "workspaceFolder": "/workspace",
+    "forwardPorts": [
+        8081,
+        8082,
+        8083,
+        8085,
+        5439
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shell.linux": "/bin/bash"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-azuretools.vscode-docker"
+            ]
+        }
+    },
+    "postCreateCommand": "docker-compose up --build",
+    "remoteUser": "vscode"
+}
