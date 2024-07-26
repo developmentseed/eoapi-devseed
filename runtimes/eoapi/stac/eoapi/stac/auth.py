@@ -12,7 +12,7 @@ class AuthSettings(BaseSettings):
     jwks_url: Optional[str] = None
 
     # Swagger UI config for Authorization Code Flow
-    client_id: Optional[str] = ""
+    client_id: str = ""
     use_pkce: bool = True
     oauth2_token_url: Optional[str] = None
     oauth2_authorization_url: Optional[str] = None
