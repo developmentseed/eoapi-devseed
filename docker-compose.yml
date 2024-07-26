@@ -42,6 +42,13 @@ services:
       - database
     command:
       bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./runtimes/eoapi/stac/eoapi
+          target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
+        - action: rebuild
+          path: ./runtimes/eoapi/stac/pyproject.toml
     volumes:
       - ./dockerfiles/scripts:/tmp/scripts
 
@@ -84,6 +91,13 @@ services:
       - database
     command:
       bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./runtimes/eoapi/raster/eoapi
+          target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
+        - action: rebuild
+          path: ./runtimes/eoapi/raster/pyproject.toml
     volumes:
       - ./dockerfiles/scripts:/tmp/scripts
 
@@ -108,6 +122,13 @@ services:
       - EOAPI_VECTOR_DEBUG=TRUE
     command:
       bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./runtimes/eoapi/vector/eoapi
+          target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
+        - action: rebuild
+          path: ./runtimes/eoapi/vector/pyproject.toml
     depends_on:
       - database
     volumes:
