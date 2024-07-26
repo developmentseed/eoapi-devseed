@@ -13,7 +13,7 @@ class AuthSettings(BaseSettings):
 
     # Swagger UI config for Authorization Code Flow
     client_id: Optional[str] = ""
-    use_pkce: bool = False
+    use_pkce: bool = True
     oauth2_token_url: Optional[str] = None
     oauth2_authorization_url: Optional[str] = None
 
