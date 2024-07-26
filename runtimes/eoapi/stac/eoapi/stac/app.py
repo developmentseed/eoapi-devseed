@@ -1,12 +1,11 @@
 """eoapi.stac app."""
 
 from contextlib import asynccontextmanager
-from typing import Annotated
 
-import jwt
+from eoapi.stac.auth import AuthSettings, JwtAuth
 from eoapi.stac.config import ApiSettings
 from eoapi.stac.extension import TiTilerExtension
-from fastapi import FastAPI, HTTPException, security, status
+from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (
@@ -47,6 +46,7 @@ except ImportError:
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
 api_settings = ApiSettings()
+auth_settings = AuthSettings()
 settings = Settings(enable_response_models=True)
 
 # Extensions
@@ -118,6 +118,10 @@ api = StacApi(
         openapi_url="/api",
         docs_url="/api.html",
         redoc_url=None,
+        swagger_ui_init_oauth={
+            "clientId": auth_settings.client_id,
+            "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+        },
     ),
     title=api_settings.name,
     description=api_settings.name,
@@ -146,73 +150,27 @@ async def viewer_page(request: Request):
     )
 
 
-if settings.jwks_url:
-    jwks_client = jwt.PyJWKClient(settings.jwks_url)  # Caches JWKS
-
-    # Setup auth requirements
-    oauth2_scheme = (
-        security.OAuth2AuthorizationCodeBearer(
-            authorizationUrl=f"{settings.oauth2_authorization_url}",
-            tokenUrl=f"{settings.oauth2_token_url}",
-            scopes={
-                # NOTE: Add requested scopes here if needed...
-            },
-        )
-        if (settings.oauth2_authorization_url and settings.oauth2_token_url)
-        else security.HTTPAuthorizationCredentials()
-    )
-
-    def user_token(
-        token_str: Annotated[str, security.Security(oauth2_scheme)],
-        required_scopes: security.SecurityScopes,
-    ):
-        # Parse & validate token
-        try:
-            payload = jwt.decode(
-                token_str,
-                jwks_client.get_signing_key_from_jwt(token_str).key,
-                algorithms=["RS256"],
-                audience=settings.permitted_jwt_audiences,
-            )
-        except jwt.exceptions.InvalidTokenError as e:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            ) from e
-
-        # Validate scopes (if required)
-        for scope in required_scopes.scopes:
-            if scope not in payload["scope"]:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Not enough permissions",
-                    headers={
-                        "WWW-Authenticate": f'Bearer scope="{required_scopes.scope_str}"'
-                    },
-                )
-
-        return payload
-
-    # Add dependency to all endpoints that create, modify or delete data.
-    api.add_route_dependencies(
-        [
-            {
-                "path": path,
-                "method": method,
-                "type": "http",
-            }
-            for method in ["POST", "PUT", "DELETE"]
-            for path in [
-                "/collections",
-                "/collections/{collectionId}",
-                "/collections/{collectionId}/items",
-                "/collections/{collectionId}/bulk_items",
-                "/collections/{collectionId}/items/{itemId}",
+if auth_settings.jwks_url:
+    JwtAuth(
+        # JWT Validation configuration
+        jwks_url=auth_settings.jwks_url,
+        allowed_jwt_audiences=auth_settings.allowed_jwt_audiences,
+        # Authorization Code Flow configuration
+        oauth2_authorization_url=auth_settings.oauth2_authorization_url,
+        oauth2_token_url=auth_settings.oauth2_token_url,
+        # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
+        oauth2_supported_scopes={},
+    ).require_auth(
+        api=api,
+        routes={
+            f"{app.root_path}/{route}": ["POST", "PUT", "DELETE"]
+            for route in [
+                "collections",
+                "collections/{collectionId}",
+                "collections/{collectionId}/items",
+                "collections/{collectionId}/bulk_items",
+                "collections/{collectionId}/items/{itemId}",
             ]
-        ],
-        [
-            # NOTE: Add required scopes here if desired...
-            security.Security(user_token, scopes=[])
-        ],
+        },
+        required_scopes=[],
     )
