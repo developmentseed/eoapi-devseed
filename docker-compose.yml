@@ -1,7 +1,6 @@
-version: '3'
+version: "3"
 
 services:
-
   # change to official image when available https://github.com/radiantearth/stac-browser/pull/386
   stac-browser:
     # build: https://github.com/radiantearth/stac-browser.git
@@ -46,9 +45,9 @@ services:
       # - EOAPI_STAC_EXTENSIONS=["filter", "query", "sort", "fields", "pagination", "titiler", "transaction"]  # defaults
       # - EOAPI_STAC_CORS_METHODS='GET,POST,PUT,OPTIONS'
     env_file:
-      - path: stac.env
-        required: false
       - path: .env
+        required: false
+      - path: stac.env
         required: false
     depends_on:
       - database
