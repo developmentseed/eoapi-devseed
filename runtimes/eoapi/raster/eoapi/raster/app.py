@@ -9,7 +9,7 @@ import jinja2
 import pystac
 from eoapi.raster import __version__ as eoapi_raster_version
 from eoapi.raster.config import ApiSettings
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, Query, security, Security
 from psycopg import OperationalError
 from psycopg.rows import dict_row
 from psycopg_pool import PoolTimeout
@@ -38,6 +38,8 @@ from titiler.pgstac.factory import (
     add_search_register_route,
 )
 from titiler.pgstac.reader import PgSTACReader
+
+from .auth import add_route_dependencies
 
 logging.getLogger("botocore.credentials").disabled = True
 logging.getLogger("botocore.utils").disabled = True
@@ -381,3 +383,18 @@ def landing(request: Request):
             "urlparams": str(request.url.query),
         },
     )
+
+
+# Add dependencies to routes
+# TODO: Why doesn't the API docs do this correctly?
+auth_scheme = security.OpenIdConnect(
+    openIdConnectUrl="http://localhost:8080/auth/realms/eoapi"
+)
+PROTECTED_METHODS = ["POST", "PUT", "DELETE"]
+add_route_dependencies(
+    routes=app.routes,
+    scopes=[
+        {"path": "*", "method": method, "type": "http"} for method in PROTECTED_METHODS
+    ],
+    dependencies=[Security(auth_scheme)],
+)
