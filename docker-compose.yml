@@ -4,11 +4,18 @@ services:
 
   # change to official image when available https://github.com/radiantearth/stac-browser/pull/386
   stac-browser:
+    # build: https://github.com/radiantearth/stac-browser.git
+    # TODO: Rm when https://github.com/radiantearth/stac-browser/pull/461 is merged
     build:
       context: dockerfiles
       dockerfile: Dockerfile.browser
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8085:8085"
+    env_file:
+      - path: .env
+        required: false
+      - path: stac-browser.env
+        required: false
     depends_on:
       - stac
       - raster
