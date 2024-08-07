@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Annotated, Any, Callable, Dict, Optional, Sequence
+import logging
 import urllib.request
 import json
 
@@ -9,6 +10,8 @@ from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
 from stac_fastapi.api.app import StacApi
 import jwt
+
+logger = logging.getLogger(__name__)
 
 
 class AuthSettings(BaseSettings):
@@ -92,7 +95,7 @@ class OidcAuth:
                     audience=allowed_jwt_audiences,
                 )
             except jwt.exceptions.InvalidTokenError as e:
-                print(f"InvalidTokenError: {e=}")
+                logger.exception(f"InvalidTokenError: {e=}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Could not validate credentials",
