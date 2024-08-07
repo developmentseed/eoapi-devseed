@@ -2,7 +2,7 @@
 
 from contextlib import asynccontextmanager
 
-from eoapi.stac.auth import AuthSettings, JwtAuth
+from eoapi.stac.auth import AuthSettings, OidcAuth
 from eoapi.stac.config import ApiSettings
 from eoapi.stac.extension import TiTilerExtension
 from fastapi import FastAPI
@@ -150,17 +150,17 @@ async def viewer_page(request: Request):
     )
 
 
-if auth_settings.jwks_url:
-    JwtAuth(
-        # JWT Validation configuration
-        jwks_url=auth_settings.jwks_url,
+if auth_settings.openid_configuration_url:
+    jwt_auth = OidcAuth(
+        # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
+        openid_configuration_url=auth_settings.openid_configuration_url,
+        openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
+        # Optionally validate the "aud" claim in the JWT
         allowed_jwt_audiences=auth_settings.allowed_jwt_audiences,
-        # Authorization Code Flow configuration
-        oauth2_authorization_url=auth_settings.oauth2_authorization_url,
-        oauth2_token_url=auth_settings.oauth2_token_url,
         # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
         oauth2_supported_scopes={},
-    ).require_auth(
+    )
+    jwt_auth.require_auth(
         api=api,
         routes={
             f"{app.root_path}/{route}": ["POST", "PUT", "DELETE"]
@@ -172,5 +172,6 @@ if auth_settings.jwks_url:
                 "collections/{collectionId}/items/{itemId}",
             ]
         },
+        # Populate with scopes required for these routes
         required_scopes=[],
     )

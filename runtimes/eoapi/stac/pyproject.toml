@@ -25,6 +25,7 @@ dependencies = [
     "importlib_resources>=1.1.0;python_version<'3.9'",
     "psycopg_pool",
     "pyjwt",
+    "cryptography"
 ]
 
 [project.optional-dependencies]

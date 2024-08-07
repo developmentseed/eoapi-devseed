@@ -38,16 +38,14 @@ services:
       # PgSTAC extensions
       # - EOAPI_STAC_EXTENSIONS=["filter", "query", "sort", "fields", "pagination", "titiler", "transaction"]  # defaults
       # - EOAPI_STAC_CORS_METHODS='GET,POST,PUT,OPTIONS'
-      # Auth controls
-      # - EOAPI_AUTH_JWKS_URL=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_{USER_POOL_ID}/.well-known/jwks.json
-      # - EOAPI_AUTH_OAUTH2_TOKEN_URL=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_{USER_POOL_ID}/oauth2/token
-      # - EOAPI_AUTH_OAUTH2_AUTHORIZATION_URL=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_{USER_POOL_ID}/oauth2/authorize
-      # - EOAPI_AUTH_USE_PKCE=true
-      # - EOAPI_AUTH_CLIENT_ID=XXXXXX
+    env_file:
+      - path: stac.env
+        required: false
+      - path: .env
+        required: false
     depends_on:
       - database
-    command:
-      bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
     develop:
       watch:
         - action: sync+restart
