@@ -160,26 +160,20 @@ if auth_settings.openid_configuration_url:
         # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
         oauth2_supported_scopes={},
     )
-    api.add_route_dependencies(
-        [
-            {
-                "path": f"{app.root_path}{route}",
-                "method": method,
-                "type": "http",
-            }
-            for route in [
-                "/collections",
-                "/collections/{collectionId}",
-                "/collections/{collectionId}/items",
-                "/collections/{collectionId}/bulk_items",
-                "/collections/{collectionId}/items/{itemId}",
-            ]
-            for method in ["POST", "PUT", "DELETE"]
+    restricted_prefixes_methods = {
+        "/collections": [
+            "POST",
+            "PUT",
+            "DELETE",
+            *([] if auth_settings.public_reads else ["GET"]),
         ],
-        [
-            Security(
-                oidc_auth.valid_token_dependency,
-                scopes=None,  # Populate with scopes required for these routes
-            )
-        ],
-    )
+        "/search": [] if auth_settings.public_reads else ["POST", "GET"],
+    }
+    for route in app.routes:
+        restricted = any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            and set(route.methods).intersection(set(restricted_methods))
+            for prefix, restricted_methods in restricted_prefixes_methods.items()
+        )
+        if restricted:
+            oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])

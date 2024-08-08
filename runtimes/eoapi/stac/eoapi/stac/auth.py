@@ -1,16 +1,27 @@
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Callable, Dict, Optional, Sequence
+from typing import Annotated, Any, Callable, Dict, Optional, Sequence, TypedDict
+import json
 import logging
 import urllib.request
-import json
 
-from fastapi import HTTPException, Security, security, status
+from fastapi import HTTPException, Security, routing, security, status
+from fastapi.dependencies.utils import get_parameterless_sub_dependant
 from fastapi.security.base import SecurityBase
 from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
 import jwt
 
+
 logger = logging.getLogger(__name__)
+
+
+class Scope(TypedDict, total=False):
+    """More strict version of Starlette's Scope."""
+
+    # https://github.com/encode/starlette/blob/6af5c515e0a896cbf3f86ee043b88f6c24200bcf/starlette/types.py#L3
+    path: str
+    method: str
+    type: Optional[str]
 
 
 class AuthSettings(BaseSettings):
@@ -21,6 +32,8 @@ class AuthSettings(BaseSettings):
     openid_configuration_internal_url: Optional[AnyHttpUrl] = None
 
     allowed_jwt_audiences: Optional[Sequence[str]] = []
+
+    public_reads: bool = True
 
     model_config = {
         "env_prefix": "EOAPI_AUTH_",
@@ -115,3 +128,42 @@ class OidcAuth:
             return payload
 
         return auth_token
+
+    def apply_auth_dependencies(
+        self,
+        api_route: routing.APIRoute,
+        required_token_scopes: Optional[Sequence[str]] = None,
+        dependency: Optional[Callable[..., Any]] = None,
+    ):
+        """
+        Apply auth dependencies to a route.
+        """
+        # Ignore paths without dependants, e.g. /api, /api.html, /docs/oauth2-redirect
+        if not hasattr(api_route, "dependant"):
+            logger.warn(
+                f"Route {api_route} has no dependant, not apply auth dependency"
+            )
+            return
+
+        depends = Security(
+            dependency or self.valid_token_dependency, scopes=required_token_scopes
+        )
+
+        # Mimicking how APIRoute handles dependencies:
+        # https://github.com/tiangolo/fastapi/blob/1760da0efa55585c19835d81afa8ca386036c325/fastapi/routing.py#L408-L412
+        logger.debug(
+            f"Adding dependency {depends} to {api_route.methods} on route {api_route.path}"
+        )
+        api_route.dependant.dependencies.insert(
+            0,
+            get_parameterless_sub_dependant(
+                depends=depends, path=api_route.path_format
+            ),
+        )
+
+        # Register dependencies directly on route so that they aren't ignored if
+        # the routes are later associated with an app (e.g.
+        # app.include_router(router))
+        # https://github.com/tiangolo/fastapi/blob/58ab733f19846b4875c5b79bfb1f4d1cb7f4823f/fastapi/applications.py#L337-L360
+        # https://github.com/tiangolo/fastapi/blob/58ab733f19846b4875c5b79bfb1f4d1cb7f4823f/fastapi/routing.py#L677-L678
+        api_route.dependencies.extend([depends])
