@@ -9,7 +9,7 @@ import jinja2
 import pystac
 from eoapi.raster import __version__ as eoapi_raster_version
 from eoapi.raster.config import ApiSettings
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, Query, security, Security
 from psycopg import OperationalError
 from psycopg.rows import dict_row
 from psycopg_pool import PoolTimeout
@@ -39,11 +39,15 @@ from titiler.pgstac.factory import (
 )
 from titiler.pgstac.reader import PgSTACReader
 
+from .auth import AuthSettings, OidcAuth
+
 logging.getLogger("botocore.credentials").disabled = True
 logging.getLogger("botocore.utils").disabled = True
 logging.getLogger("rio-tiler").setLevel(logging.ERROR)
+logging.getLogger(__name__).setLevel(logging.DEBUG)
 
 settings = ApiSettings()
+auth_settings = AuthSettings()
 
 jinja2_env = jinja2.Environment(
     loader=jinja2.ChoiceLoader(
@@ -72,6 +76,10 @@ app = FastAPI(
     docs_url="/api.html",
     root_path=settings.root_path,
     lifespan=lifespan,
+    swagger_ui_init_oauth={
+        "clientId": auth_settings.client_id,
+        "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+    },
 )
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
 add_exception_handlers(app, MOSAIC_STATUS_CODES)
@@ -381,3 +389,25 @@ def landing(request: Request):
             "urlparams": str(request.url.query),
         },
     )
+
+
+# Add dependencies to routes
+if auth_settings.openid_configuration_url and not auth_settings.public_reads:
+    oidc_auth = OidcAuth(
+        # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
+        openid_configuration_url=auth_settings.openid_configuration_url,
+        openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
+        # Optionally validate the "aud" claim in the JWT
+        allowed_jwt_audiences=auth_settings.allowed_jwt_audiences,
+        # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
+        oauth2_supported_scopes={},
+    )
+
+    restricted_prefixes = ["/searches", "/collections"]
+    for route in app.routes:
+        if not any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            for prefix in restricted_prefixes
+        ):
+            continue
+        oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])

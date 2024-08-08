@@ -12,7 +12,7 @@ RUN rm config.js
 RUN npm install
 # replace the default config.js with our config file
 COPY ./browser_config.js ./config.js
-RUN \[ "${DYNAMIC_CONFIG}" == "true" \] && sed -i 's/<!-- <script defer="defer" src=".\/config.js"><\/script> -->/<script defer="defer" src=".\/config.js"><\/script>/g' public/index.html
+RUN \[ "${DYNAMIC_CONFIG}" == "true" \] && sed -i "s|<!-- <script defer=\"defer\" src=\"/config.js\"></script> -->|<script defer=\"defer\" src=\"${pathPrefix}config.js\"></script>|g" public/index.html
 RUN npm run build
 
 
@@ -31,4 +31,4 @@ EXPOSE 8085
 STOPSIGNAL SIGTERM
 
 # override entrypoint, which calls nginx-entrypoint underneath
-COPY --from=build-step /app/docker/docker-entrypoint.sh ./docker-entrypoint.d/40-stac-browser-entrypoint.sh
+ADD ./docker-entrypoint.sh ./docker-entrypoint.d/40-stac-browser-entrypoint.sh

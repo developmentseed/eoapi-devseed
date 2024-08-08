@@ -2,9 +2,10 @@
 
 from contextlib import asynccontextmanager
 
+from eoapi.stac.auth import AuthSettings, OidcAuth
 from eoapi.stac.config import ApiSettings
 from eoapi.stac.extension import TiTilerExtension
-from fastapi import FastAPI
+from fastapi import FastAPI, Security
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (
@@ -45,6 +46,7 @@ except ImportError:
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
 api_settings = ApiSettings()
+auth_settings = AuthSettings()
 settings = Settings(enable_response_models=True)
 
 # Extensions
@@ -116,6 +118,10 @@ api = StacApi(
         openapi_url="/api",
         docs_url="/api.html",
         redoc_url=None,
+        swagger_ui_init_oauth={
+            "clientId": auth_settings.client_id,
+            "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+        },
     ),
     title=api_settings.name,
     description=api_settings.name,
@@ -142,3 +148,32 @@ async def viewer_page(request: Request):
         },
         media_type="text/html",
     )
+
+
+if auth_settings.openid_configuration_url:
+    oidc_auth = OidcAuth(
+        # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
+        openid_configuration_url=auth_settings.openid_configuration_url,
+        openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
+        # Optionally validate the "aud" claim in the JWT
+        allowed_jwt_audiences=auth_settings.allowed_jwt_audiences,
+        # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
+        oauth2_supported_scopes={},
+    )
+    restricted_prefixes_methods = {
+        "/collections": [
+            "POST",
+            "PUT",
+            "DELETE",
+            *([] if auth_settings.public_reads else ["GET"]),
+        ],
+        "/search": [] if auth_settings.public_reads else ["POST", "GET"],
+    }
+    for route in app.routes:
+        restricted = any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            and set(route.methods).intersection(set(restricted_methods))
+            for prefix, restricted_methods in restricted_prefixes_methods.items()
+        )
+        if restricted:
+            oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
