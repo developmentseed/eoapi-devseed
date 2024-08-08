@@ -163,16 +163,16 @@ if auth_settings.openid_configuration_url:
     api.add_route_dependencies(
         [
             {
-                "path": f"{app.root_path}/{route}",
+                "path": f"{app.root_path}{route}",
                 "method": method,
                 "type": "http",
             }
             for route in [
-                "collections",
-                "collections/{collectionId}",
-                "collections/{collectionId}/items",
-                "collections/{collectionId}/bulk_items",
-                "collections/{collectionId}/items/{itemId}",
+                "/collections",
+                "/collections/{collectionId}",
+                "/collections/{collectionId}/items",
+                "/collections/{collectionId}/bulk_items",
+                "/collections/{collectionId}/items/{itemId}",
             ]
             for method in ["POST", "PUT", "DELETE"]
         ],

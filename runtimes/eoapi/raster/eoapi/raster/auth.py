@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from typing import Annotated, Any, Callable, Dict, Optional, Sequence, TypedDict
-import copy
 import json
 import logging
 import urllib.request
@@ -10,7 +9,6 @@ from fastapi.dependencies.utils import get_parameterless_sub_dependant
 from fastapi.security.base import SecurityBase
 from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
-from starlette.routing import Match
 import jwt
 
 
@@ -130,39 +128,6 @@ class OidcAuth:
             return payload
 
         return auth_token
-
-    def require_auth(
-        self,
-        *,
-        routes: Sequence[routing.APIRoute],
-        potection_scopes: Sequence[Scope],
-        required_token_scopes: Optional[Sequence[str]] = None,
-    ):
-        """
-        Convenience method to run many routes through many protection scopes.
-        """
-        for scope in potection_scopes:
-            for route in routes:
-                if not self.test_route_match(route, scope):
-                    continue
-                self.apply_auth_dependencies(
-                    route, required_token_scopes=required_token_scopes
-                )
-
-    @staticmethod
-    def test_route_match(route: routing.APIRoute, scope: Scope) -> bool:
-        """
-        Check if a route matches a given scope.
-        """
-        _scope = copy.deepcopy(scope)
-        if scope["path"] == "*":
-            _scope["path"] = route.path
-
-        if scope["method"] == "*":
-            _scope["method"] = list(route.methods)[0]
-
-        match, _ = route.matches({"type": "http", **_scope})
-        return match == Match.FULL
 
     def apply_auth_dependencies(
         self,

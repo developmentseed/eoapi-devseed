@@ -13,7 +13,7 @@ services:
     env_file:
       - path: .env
         required: false
-      - path: stac-browser.env
+      - path: .stac-browser.env
         required: false
     depends_on:
       - stac
@@ -47,7 +47,7 @@ services:
     env_file:
       - path: .env
         required: false
-      - path: stac.env
+      - path: .stac.env
         required: false
     depends_on:
       - database
@@ -100,7 +100,7 @@ services:
     env_file:
       - path: .env
         required: false
-      - path: raster.env
+      - path: .raster.env
         required: false
     depends_on:
       - database
@@ -134,8 +134,12 @@ services:
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=10
       - EOAPI_VECTOR_DEBUG=TRUE
-    command:
-      bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    env_file:
+      - path: .env
+        required: false
+      - path: .vector.env
+        required: false
+    command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
     develop:
       watch:
         - action: sync+restart
