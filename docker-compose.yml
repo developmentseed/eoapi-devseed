@@ -97,10 +97,14 @@ services:
       - MOSAIC_CONCURRENCY=1
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    env_file:
+      - path: .env
+        required: false
+      - path: raster.env
+        required: false
     depends_on:
       - database
-    command:
-      bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
     develop:
       watch:
         - action: sync+restart

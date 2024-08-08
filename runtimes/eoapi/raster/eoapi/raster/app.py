@@ -39,13 +39,15 @@ from titiler.pgstac.factory import (
 )
 from titiler.pgstac.reader import PgSTACReader
 
-from .auth import add_route_dependencies
+from .auth import AuthSettings, OidcAuth
 
 logging.getLogger("botocore.credentials").disabled = True
 logging.getLogger("botocore.utils").disabled = True
 logging.getLogger("rio-tiler").setLevel(logging.ERROR)
+logging.getLogger(__name__).setLevel(logging.DEBUG)
 
 settings = ApiSettings()
+auth_settings = AuthSettings()
 
 jinja2_env = jinja2.Environment(
     loader=jinja2.ChoiceLoader(
@@ -386,15 +388,19 @@ def landing(request: Request):
 
 
 # Add dependencies to routes
-# TODO: Why doesn't the API docs do this correctly?
-auth_scheme = security.OpenIdConnect(
-    openIdConnectUrl="http://localhost:8080/auth/realms/eoapi"
-)
-PROTECTED_METHODS = ["POST", "PUT", "DELETE"]
-add_route_dependencies(
-    routes=app.routes,
-    scopes=[
-        {"path": "*", "method": method, "type": "http"} for method in PROTECTED_METHODS
-    ],
-    dependencies=[Security(auth_scheme)],
-)
+if auth_settings.openid_configuration_url and not auth_settings.public_reads:
+    oidc_auth = OidcAuth(
+        # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
+        openid_configuration_url=auth_settings.openid_configuration_url,
+        openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
+        # Optionally validate the "aud" claim in the JWT
+        allowed_jwt_audiences=auth_settings.allowed_jwt_audiences,
+        # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
+        oauth2_supported_scopes={},
+    )
+
+    protected_prefixes = ["/searches", "/collections"]
+    for route in app.routes:
+        if not any(route.path.startswith(prefix) for prefix in protected_prefixes):
+            continue
+        oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
