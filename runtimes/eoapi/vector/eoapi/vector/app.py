@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 import jinja2
 from eoapi.vector import __version__ as eoapi_vector_version
+from eoapi.vector.auth import AuthSettings, OidcAuth
 from eoapi.vector.config import ApiSettings
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
@@ -27,6 +28,7 @@ CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
 settings = ApiSettings()
 postgres_settings = PostgresSettings()
+auth_settings = AuthSettings()
 
 
 @asynccontextmanager
@@ -62,6 +64,10 @@ app = FastAPI(
     docs_url="/api.html",
     lifespan=lifespan,
     root_path=settings.root_path,
+    swagger_ui_init_oauth={
+        "clientId": auth_settings.client_id,
+        "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+    },
 )
 
 # add eoapi_vector templates and tipg templates
@@ -142,3 +148,24 @@ if settings.debug:
         )
 
         return request.app.state.collection_catalog
+
+
+if auth_settings.openid_configuration_url and not auth_settings.public_reads:
+    oidc_auth = OidcAuth(
+        # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
+        openid_configuration_url=auth_settings.openid_configuration_url,
+        openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
+        # Optionally validate the "aud" claim in the JWT
+        allowed_jwt_audiences=auth_settings.allowed_jwt_audiences,
+        # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
+        oauth2_supported_scopes={},
+    )
+
+    protected_prefixes = ["/collections"]
+    for route in app.routes:
+        if not any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            for prefix in protected_prefixes
+        ):
+            continue
+        oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
