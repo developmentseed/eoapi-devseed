@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from eoapi.stac.auth import AuthSettings, OidcAuth
 from eoapi.stac.config import ApiSettings
 from eoapi.stac.extension import TiTilerExtension
-from fastapi import FastAPI
+from fastapi import FastAPI, Security
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (
@@ -151,7 +151,7 @@ async def viewer_page(request: Request):
 
 
 if auth_settings.openid_configuration_url:
-    jwt_auth = OidcAuth(
+    oidc_auth = OidcAuth(
         # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
         openid_configuration_url=auth_settings.openid_configuration_url,
         openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
@@ -160,10 +160,13 @@ if auth_settings.openid_configuration_url:
         # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
         oauth2_supported_scopes={},
     )
-    jwt_auth.require_auth(
-        api=api,
-        routes={
-            f"{app.root_path}/{route}": ["POST", "PUT", "DELETE"]
+    api.add_route_dependencies(
+        [
+            {
+                "path": f"{app.root_path}/{route}",
+                "method": method,
+                "type": "http",
+            }
             for route in [
                 "collections",
                 "collections/{collectionId}",
@@ -171,7 +174,12 @@ if auth_settings.openid_configuration_url:
                 "collections/{collectionId}/bulk_items",
                 "collections/{collectionId}/items/{itemId}",
             ]
-        },
-        # Populate with scopes required for these routes
-        required_scopes=[],
+            for method in ["POST", "PUT", "DELETE"]
+        ],
+        [
+            Security(
+                oidc_auth.valid_token_dependency,
+                scopes=None,  # Populate with scopes required for these routes
+            )
+        ],
     )

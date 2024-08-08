@@ -8,7 +8,6 @@ from fastapi import HTTPException, Security, security, status
 from fastapi.security.base import SecurityBase
 from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
-from stac_fastapi.api.app import StacApi
 import jwt
 
 logger = logging.getLogger(__name__)
@@ -43,27 +42,27 @@ class OidcAuth:
     valid_token_dependency: Callable[..., Any] = field(init=False)
 
     def __post_init__(self):
-        oidc_config_url = str(
-            self.openid_configuration_internal_url or self.openid_configuration_url
-        )
-        with urllib.request.urlopen(oidc_config_url) as response:
+        with urllib.request.urlopen(
+            str(self.openid_configuration_internal_url or self.openid_configuration_url)
+        ) as response:
             if response.status != 200:
                 raise Exception(
                     f"Request for OIDC config failed with status {response.status}"
                 )
             oidc_config = json.load(response)
-        self.jwks_client = jwt.PyJWKClient(oidc_config["jwks_uri"])
+            self.jwks_client = jwt.PyJWKClient(oidc_config["jwks_uri"])
+
         self.auth_scheme = security.OpenIdConnect(
-            openIdConnectUrl=self.openid_configuration_url.unicode_string()
+            openIdConnectUrl=str(self.openid_configuration_url)
         )
-        self.valid_token_dependency = self.create_user_token_dependency(
+        self.valid_token_dependency = self.create_auth_token_dependency(
             auth_scheme=self.auth_scheme,
             jwks_client=self.jwks_client,
             allowed_jwt_audiences=self.allowed_jwt_audiences,
         )
 
     @staticmethod
-    def create_user_token_dependency(
+    def create_auth_token_dependency(
         auth_scheme: SecurityBase,
         jwks_client: jwt.PyJWKClient,
         allowed_jwt_audiences: Sequence[str],
@@ -72,7 +71,7 @@ class OidcAuth:
         Create a dependency that validates JWT tokens & scopes.
         """
 
-        def user_token(
+        def auth_token(
             token_str: Annotated[str, Security(auth_scheme)],
             required_scopes: security.SecurityScopes,
         ):
@@ -115,28 +114,4 @@ class OidcAuth:
 
             return payload
 
-        return user_token
-
-    def require_auth(
-        self,
-        *,
-        api: StacApi,
-        routes: Dict[str, Sequence[str]],
-        required_scopes: Optional[Sequence[str]],
-    ):
-        """
-        Helper to add auth dependencies to existing routes.
-        """
-        api.add_route_dependencies(
-            [
-                {
-                    "path": path,
-                    "method": method,
-                    "type": "http",
-                }
-                for path, methods in routes.items()
-                for method in methods
-            ],
-            [Security(self.valid_token_dependency, scopes=required_scopes)],
-        )
-        return self
+        return auth_token
