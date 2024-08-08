@@ -76,6 +76,10 @@ app = FastAPI(
     docs_url="/api.html",
     root_path=settings.root_path,
     lifespan=lifespan,
+    swagger_ui_init_oauth={
+        "clientId": auth_settings.client_id,
+        "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+    },
 )
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
 add_exception_handlers(app, MOSAIC_STATUS_CODES)
@@ -401,6 +405,9 @@ if auth_settings.openid_configuration_url and not auth_settings.public_reads:
 
     protected_prefixes = ["/searches", "/collections"]
     for route in app.routes:
-        if not any(route.path.startswith(prefix) for prefix in protected_prefixes):
+        if not any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            for prefix in protected_prefixes
+        ):
             continue
         oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
