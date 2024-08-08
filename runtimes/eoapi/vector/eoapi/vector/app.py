@@ -161,11 +161,11 @@ if auth_settings.openid_configuration_url and not auth_settings.public_reads:
         oauth2_supported_scopes={},
     )
 
-    protected_prefixes = ["/collections"]
+    restricted_prefixes = ["/collections"]
     for route in app.routes:
         if not any(
             route.path.startswith(f"{app.root_path}{prefix}")
-            for prefix in protected_prefixes
+            for prefix in restricted_prefixes
         ):
             continue
         oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
