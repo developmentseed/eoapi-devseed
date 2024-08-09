@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from eoapi.stac.auth import AuthSettings, OidcAuth
 from eoapi.stac.config import ApiSettings
 from eoapi.stac.extension import TiTilerExtension
-from fastapi import FastAPI, Security
+from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (

@@ -9,7 +9,7 @@ import jinja2
 import pystac
 from eoapi.raster import __version__ as eoapi_raster_version
 from eoapi.raster.config import ApiSettings
-from fastapi import Depends, FastAPI, Query, security, Security
+from fastapi import Depends, FastAPI, Query
 from psycopg import OperationalError
 from psycopg.rows import dict_row
 from psycopg_pool import PoolTimeout
