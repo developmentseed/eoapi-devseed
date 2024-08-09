@@ -27,6 +27,7 @@ services:
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8081:8081"
     environment:
+      - PYTHONUNBUFFERED=1
       # Application
       - HOST=0.0.0.0
       - PORT=8081
@@ -72,6 +73,7 @@ services:
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8082:8082"
     environment:
+      - PYTHONUNBUFFERED=1
       # Application
       - HOST=0.0.0.0
       - PORT=8082
@@ -122,6 +124,7 @@ services:
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8083:8083"
     environment:
+      - PYTHONUNBUFFERED=1
       # Application
       - HOST=0.0.0.0
       - PORT=8083
