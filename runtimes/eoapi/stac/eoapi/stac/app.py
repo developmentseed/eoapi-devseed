@@ -1,10 +1,8 @@
 """eoapi.stac app."""
 
+import logging
 from contextlib import asynccontextmanager
 
-from eoapi.stac.auth import AuthSettings, OidcAuth
-from eoapi.stac.config import ApiSettings
-from eoapi.stac.extension import TiTilerExtension
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
@@ -36,6 +34,8 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
+from . import auth, config, extension, logs
+
 try:
     from importlib.resources import files as resources_files  # type: ignore
 except ImportError:
@@ -45,9 +45,13 @@ except ImportError:
 
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
-api_settings = ApiSettings()
-auth_settings = AuthSettings()
+api_settings = config.ApiSettings()
+auth_settings = auth.AuthSettings()
 settings = Settings(enable_response_models=True)
+
+# Logs
+logs.init_logging(debug=api_settings.debug)
+logger = logging.getLogger(__name__)
 
 # Extensions
 extensions_map = {
@@ -62,7 +66,9 @@ extensions_map = {
     "pagination": TokenPaginationExtension(),
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
-    "titiler": TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint),
+    "titiler": extension.TiTilerExtension(
+        titiler_endpoint=api_settings.titiler_endpoint
+    ),
 }
 
 if enabled_extensions := api_settings.extensions:
@@ -79,9 +85,11 @@ else:
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
     # Create Connection Pool
+    logger.debug("Connecting to DB...")
     await connect_to_db(app)
     yield
     # Close the Connection Pool
+    logger.debug("Disconnecting from DB...")
     await close_db_connection(app)
 
 
@@ -151,7 +159,7 @@ async def viewer_page(request: Request):
 
 
 if auth_settings.openid_configuration_url:
-    oidc_auth = OidcAuth(
+    oidc_auth = auth.OidcAuth(
         # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
         openid_configuration_url=auth_settings.openid_configuration_url,
         openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
