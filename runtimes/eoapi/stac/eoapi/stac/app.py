@@ -1,9 +1,8 @@
 """eoapi.stac app."""
 
+import logging
 from contextlib import asynccontextmanager
 
-from eoapi.stac.config import ApiSettings
-from eoapi.stac.extension import TiTilerExtension
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
@@ -35,6 +34,8 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
+from . import auth, config, extension, logs
+
 try:
     from importlib.resources import files as resources_files  # type: ignore
 except ImportError:
@@ -44,8 +45,12 @@ except ImportError:
 
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
-api_settings = ApiSettings()
+api_settings = config.ApiSettings()
 settings = Settings(enable_response_models=True)
+
+# Logs
+logs.init_logging(debug=api_settings.debug)
+logger = logging.getLogger(__name__)
 
 # Extensions
 extensions_map = {
@@ -60,7 +65,9 @@ extensions_map = {
     "pagination": TokenPaginationExtension(),
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
-    "titiler": TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint),
+    "titiler": extension.TiTilerExtension(
+        titiler_endpoint=api_settings.titiler_endpoint
+    ),
 }
 
 if enabled_extensions := api_settings.extensions:
@@ -76,11 +83,15 @@ else:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
-    # Create Connection Pool
+    logger.debug("Connecting to db...")
     await connect_to_db(app)
+    logger.debug("Connected to db.")
+
     yield
-    # Close the Connection Pool
+
+    logger.debug("Closing db connections...")
     await close_db_connection(app)
+    logger.debug("Closed db connection.")
 
 
 # Middlewares
