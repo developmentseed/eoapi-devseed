@@ -1,6 +1,7 @@
-version: "3"
+version: '3'
 
 services:
+
   # change to official image when available https://github.com/radiantearth/stac-browser/pull/386
   stac-browser:
     # build: https://github.com/radiantearth/stac-browser.git
@@ -10,11 +11,6 @@ services:
       dockerfile: Dockerfile.browser
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8085:8085"
-    env_file:
-      - path: .env
-        required: false
-      - path: .stac-browser.env
-        required: false
     depends_on:
       - stac
       - raster
@@ -27,7 +23,6 @@ services:
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8081:8081"
     environment:
-      - PYTHONUNBUFFERED=1
       # Application
       - HOST=0.0.0.0
       - PORT=8081
@@ -45,14 +40,10 @@ services:
       # PgSTAC extensions
       # - EOAPI_STAC_EXTENSIONS=["filter", "query", "sort", "fields", "pagination", "titiler", "transaction"]  # defaults
       # - EOAPI_STAC_CORS_METHODS='GET,POST,PUT,OPTIONS'
-    env_file:
-      - path: .env
-        required: false
-      - path: .stac.env
-        required: false
     depends_on:
       - database
-    command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    command:
+      bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
     develop:
       watch:
         - action: sync+restart
@@ -73,7 +64,6 @@ services:
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8082:8082"
     environment:
-      - PYTHONUNBUFFERED=1
       # Application
       - HOST=0.0.0.0
       - PORT=8082
@@ -99,14 +89,10 @@ services:
       - MOSAIC_CONCURRENCY=1
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-    env_file:
-      - path: .env
-        required: false
-      - path: .raster.env
-        required: false
     depends_on:
       - database
-    command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    command:
+      bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
     develop:
       watch:
         - action: sync+restart
@@ -124,7 +110,6 @@ services:
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8083:8083"
     environment:
-      - PYTHONUNBUFFERED=1
       # Application
       - HOST=0.0.0.0
       - PORT=8083
@@ -137,12 +122,8 @@ services:
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=10
       - EOAPI_VECTOR_DEBUG=TRUE
-    env_file:
-      - path: .env
-        required: false
-      - path: .vector.env
-        required: false
-    command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
+    command:
+      bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && /start.sh"
     develop:
       watch:
         - action: sync+restart
