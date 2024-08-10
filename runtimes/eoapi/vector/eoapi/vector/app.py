@@ -3,9 +3,6 @@
 from contextlib import asynccontextmanager
 
 import jinja2
-from eoapi.vector import __version__ as eoapi_vector_version
-from eoapi.vector.auth import AuthSettings, OidcAuth
-from eoapi.vector.config import ApiSettings
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.templating import Jinja2Templates
@@ -17,6 +14,8 @@ from tipg.factory import Endpoints as TiPgEndpoints
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.settings import PostgresSettings
 
+from . import __version__ as eoapi_vector_version, auth, config
+
 try:
     from importlib.resources import files as resources_files  # type: ignore
 except ImportError:
@@ -26,9 +25,9 @@ except ImportError:
 
 CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
-settings = ApiSettings()
+settings = config.ApiSettings()
 postgres_settings = PostgresSettings()
-auth_settings = AuthSettings()
+auth_settings = auth.AuthSettings()
 
 
 @asynccontextmanager
@@ -151,7 +150,7 @@ if settings.debug:
 
 
 if auth_settings.openid_configuration_url and not auth_settings.public_reads:
-    oidc_auth = OidcAuth(
+    oidc_auth = auth.OidcAuth(
         # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
         openid_configuration_url=auth_settings.openid_configuration_url,
         openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
