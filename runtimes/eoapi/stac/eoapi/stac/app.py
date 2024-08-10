@@ -61,8 +61,10 @@ extensions_map = {
     "pagination": TokenPaginationExtension(),
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
-    "titiler": extension.TiTilerExtension(
-        titiler_endpoint=api_settings.titiler_endpoint
+    "titiler": (
+        extension.TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
+        if api_settings.titiler_endpoint
+        else None
     ),
 }
 
