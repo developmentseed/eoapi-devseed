@@ -15,7 +15,8 @@ from tipg.factory import Endpoints as TiPgEndpoints
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.settings import PostgresSettings
 
-from . import __version__ as eoapi_vector_version, config, logs
+from . import __version__ as eoapi_vector_version
+from . import config, logs
 
 try:
     from importlib.resources import files as resources_files  # type: ignore

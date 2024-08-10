@@ -34,7 +34,7 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
-from . import auth, config, extension, logs
+from . import config, extension, logs
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -65,8 +65,10 @@ extensions_map = {
     "pagination": TokenPaginationExtension(),
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
-    "titiler": extension.TiTilerExtension(
-        titiler_endpoint=api_settings.titiler_endpoint
+    "titiler": (
+        extension.TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
+        if api_settings.titiler_endpoint
+        else None
     ),
 }
 

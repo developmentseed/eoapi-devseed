@@ -1,9 +1,9 @@
-from typing import Dict
-import logging
+from logging import config
+from typing import Any, Dict
 
 
-def init_logging(debug: bool = False, loggers: Dict[str, str] = {}):
-    logging.config.dictConfig(
+def init_logging(debug: bool = False, loggers: Dict[str, Any] = {}):
+    config.dictConfig(
         # https://docs.python.org/3/library/logging.config.html#logging-config-dictschema
         {
             "version": 1,

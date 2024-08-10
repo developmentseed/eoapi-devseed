@@ -37,7 +37,8 @@ from titiler.pgstac.factory import (
 )
 from titiler.pgstac.reader import PgSTACReader
 
-from . import __version__ as eoapi_raster_version, auth, config, logs
+from . import __version__ as eoapi_raster_version
+from . import config, logs
 
 settings = config.ApiSettings()
 
