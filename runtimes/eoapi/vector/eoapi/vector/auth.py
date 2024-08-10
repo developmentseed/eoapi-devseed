@@ -1,16 +1,15 @@
-from dataclasses import dataclass, field
-from typing import Annotated, Any, Callable, Dict, Optional, Sequence, TypedDict
 import json
 import logging
 import urllib.request
+from dataclasses import dataclass, field
+from typing import Annotated, Any, Callable, Dict, Optional, Sequence, TypedDict
 
+import jwt
 from fastapi import HTTPException, Security, routing, security, status
 from fastapi.dependencies.utils import get_parameterless_sub_dependant
 from fastapi.security.base import SecurityBase
 from pydantic import AnyHttpUrl
 from pydantic_settings import BaseSettings
-import jwt
-
 
 logger = logging.getLogger(__name__)
 

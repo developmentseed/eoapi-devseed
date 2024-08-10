@@ -37,7 +37,8 @@ from titiler.pgstac.factory import (
 )
 from titiler.pgstac.reader import PgSTACReader
 
-from . import __version__ as eoapi_raster_version, auth, config
+from . import __version__ as eoapi_raster_version
+from . import auth, config
 
 logging.getLogger("botocore.credentials").disabled = True
 logging.getLogger("botocore.utils").disabled = True
