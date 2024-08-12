@@ -7,8 +7,6 @@ from typing import Dict
 
 import jinja2
 import pystac
-from eoapi.raster import __version__ as eoapi_raster_version
-from eoapi.raster.config import ApiSettings
 from fastapi import Depends, FastAPI, Query
 from psycopg import OperationalError
 from psycopg.rows import dict_row
@@ -39,12 +37,33 @@ from titiler.pgstac.factory import (
 )
 from titiler.pgstac.reader import PgSTACReader
 
-logging.getLogger("botocore.credentials").disabled = True
-logging.getLogger("botocore.utils").disabled = True
-logging.getLogger("rio-tiler").setLevel(logging.ERROR)
+from . import __version__ as eoapi_raster_version
+from . import config, logs
 
-settings = ApiSettings()
+settings = config.ApiSettings()
 
+# Logs
+logs.init_logging(
+    debug=settings.debug,
+    loggers={
+        "botocore.credentials": {
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "botocore.utils": {
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "rio-tiler": {
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+)
+logger = logging.getLogger(__name__)
+
+
+logger.debug("Loading jinja2 templates...")
 jinja2_env = jinja2.Environment(
     loader=jinja2.ChoiceLoader(
         [
@@ -58,11 +77,15 @@ templates = Jinja2Templates(env=jinja2_env)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
-    # Create Connection Pool
+    logger.debug("Connecting to db...")
     await connect_to_db(app)
+    logger.debug("Connected to db.")
+
     yield
-    # Close the Connection Pool
+
+    logger.debug("Closing db connections...")
     await close_db_connection(app)
+    logger.debug("Closed db connection.")
 
 
 app = FastAPI(
