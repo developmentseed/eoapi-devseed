@@ -40,7 +40,6 @@ from titiler.pgstac.reader import PgSTACReader
 from . import __version__ as eoapi_raster_version
 from . import auth, config, logs
 
-
 settings = config.ApiSettings()
 auth_settings = auth.AuthSettings()
 
