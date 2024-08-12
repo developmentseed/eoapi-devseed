@@ -38,15 +38,35 @@ from titiler.pgstac.factory import (
 from titiler.pgstac.reader import PgSTACReader
 
 from . import __version__ as eoapi_raster_version
-from . import auth, config
+from . import auth, config, logs
 
-logging.getLogger("botocore.credentials").disabled = True
-logging.getLogger("botocore.utils").disabled = True
-logging.getLogger("rio-tiler").setLevel(logging.ERROR)
 
 settings = config.ApiSettings()
 auth_settings = auth.AuthSettings()
 
+
+# Logs
+logs.init_logging(
+    debug=settings.debug,
+    loggers={
+        "botocore.credentials": {
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "botocore.utils": {
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "rio-tiler": {
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+)
+logger = logging.getLogger(__name__)
+
+
+logger.debug("Loading jinja2 templates...")
 jinja2_env = jinja2.Environment(
     loader=jinja2.ChoiceLoader(
         [
@@ -60,11 +80,15 @@ templates = Jinja2Templates(env=jinja2_env)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
-    # Create Connection Pool
+    logger.debug("Connecting to db...")
     await connect_to_db(app)
+    logger.debug("Connected to db.")
+
     yield
-    # Close the Connection Pool
+
+    logger.debug("Closing db connections...")
     await close_db_connection(app)
+    logger.debug("Closed db connection.")
 
 
 app = FastAPI(

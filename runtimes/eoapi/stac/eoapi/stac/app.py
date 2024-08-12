@@ -1,5 +1,6 @@
 """eoapi.stac app."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -33,7 +34,7 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
-from . import auth, config, extension
+from . import auth, config, extension, logs
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -47,6 +48,10 @@ templates = Jinja2Templates(directory=str(resources_files(__package__) / "templa
 api_settings = config.ApiSettings()
 auth_settings = auth.AuthSettings()
 settings = Settings(enable_response_models=True)
+
+# Logs
+logs.init_logging(debug=api_settings.debug)
+logger = logging.getLogger(__name__)
 
 # Extensions
 extensions_map = {
@@ -81,11 +86,15 @@ else:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
-    # Create Connection Pool
+    logger.debug("Connecting to db...")
     await connect_to_db(app)
+    logger.debug("Connected to db.")
+
     yield
-    # Close the Connection Pool
+
+    logger.debug("Closing db connections...")
     await close_db_connection(app)
+    logger.debug("Closed db connection.")
 
 
 # Middlewares

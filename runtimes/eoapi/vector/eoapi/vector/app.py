@@ -1,5 +1,6 @@
 """eoapi.vector app."""
 
+import logging
 from contextlib import asynccontextmanager
 
 import jinja2
@@ -15,7 +16,7 @@ from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.settings import PostgresSettings
 
 from . import __version__ as eoapi_vector_version
-from . import auth, config
+from . import auth, config, logs
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -30,10 +31,31 @@ settings = config.ApiSettings()
 postgres_settings = PostgresSettings()
 auth_settings = auth.AuthSettings()
 
+# Logs
+logs.init_logging(
+    debug=settings.debug,
+    loggers={
+        "botocore.credentials": {
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "botocore.utils": {
+            "level": "CRITICAL",
+            "propagate": False,
+        },
+        "rio-tiler": {
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+)
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
+    logger.debug("Connecting to db...")
     await connect_to_db(
         app,
         settings=postgres_settings,
@@ -41,6 +63,8 @@ async def lifespan(app: FastAPI):
         schemas=["pgstac", "public"],
         user_sql_files=list(CUSTOM_SQL_DIRECTORY.glob("*.sql")),  # type: ignore
     )
+
+    logger.debug("Registering collection catalog...")
     await register_collection_catalog(
         app,
         # For the Tables' Catalog we only use the `public` schema
@@ -54,6 +78,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # Close the Connection Pool
+    logger.debug("Closing db connections...")
     await close_db_connection(app)
 
 
