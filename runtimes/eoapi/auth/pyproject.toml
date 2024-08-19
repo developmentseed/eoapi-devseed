@@ -21,7 +21,6 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "requests",
     "fastapi-slim>=0.111.0",
     "pyjwt",
     "cryptography",
