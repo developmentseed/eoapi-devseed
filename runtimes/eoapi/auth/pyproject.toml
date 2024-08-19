@@ -3,7 +3,7 @@ build-backend = "pdm.pep517.api"
 requires = ["pdm-pep517"]
 
 [tool.pdm.version]
-path = "eoapi/auth.py"
+path = "eoapi/auth/__init__.py"
 source = "file"
 
 [tool.pdm.build]
