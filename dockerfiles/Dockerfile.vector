@@ -2,9 +2,10 @@ ARG PYTHON_VERSION=3.11
 
 FROM ghcr.io/vincentsarago/uvicorn-gunicorn:${PYTHON_VERSION}
 
+COPY runtimes/eoapi/auth /tmp/auth
 COPY runtimes/eoapi/vector /tmp/vector
-RUN python -m pip install /tmp/vector
-RUN rm -rf /tmp/vector
+RUN python -m pip install /tmp/auth /tmp/vector
+RUN rm -rf /tmp/vector /tmp/auth
 
 ENV MODULE_NAME eoapi.vector.app
 ENV VARIABLE_NAME app

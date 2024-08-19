@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+from eoapi.auth import AuthSettings, OidcAuth
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
@@ -34,7 +35,9 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
-from . import auth, config, extension, logs
+from .config import ApiSettings
+from .extension import TiTilerExtension
+from .logs import init_logging
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -45,12 +48,12 @@ except ImportError:
 
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
-api_settings = config.ApiSettings()
-auth_settings = auth.AuthSettings()
+api_settings = ApiSettings()
+auth_settings = AuthSettings()
 settings = Settings(enable_response_models=True)
 
 # Logs
-logs.init_logging(debug=api_settings.debug)
+init_logging(debug=api_settings.debug)
 logger = logging.getLogger(__name__)
 
 # Extensions
@@ -67,7 +70,7 @@ extensions_map = {
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
     "titiler": (
-        extension.TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
+        TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
         if api_settings.titiler_endpoint
         else None
     ),
@@ -163,7 +166,7 @@ async def viewer_page(request: Request):
 
 
 if auth_settings.openid_configuration_url:
-    oidc_auth = auth.OidcAuth(
+    oidc_auth = OidcAuth(
         # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
         openid_configuration_url=auth_settings.openid_configuration_url,
         openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,

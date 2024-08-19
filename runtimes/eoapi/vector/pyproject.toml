@@ -21,8 +21,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "tipg==0.7.1",
-    "pyjwt",
-    "cryptography",
+    "eoapi.auth",
 ]
 
 [project.optional-dependencies]

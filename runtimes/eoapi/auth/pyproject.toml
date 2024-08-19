@@ -1,10 +1,11 @@
 [project]
-name = "eoapi.stac"
-description = "STAC Metadata service for eoAPI."
+name = "eoapi.auth"
+description = "Auth tools for eoAPI."
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [
     {name = "Vincent Sarago", email = "vincent@developmentseed.com"},
+    {name = "Anthony Lukach", email = "anthony@developmentseed.org"}
 ]
 license = {text = "MIT"}
 classifiers = [
@@ -15,16 +16,17 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: GIS",
 ]
 dynamic = ["version"]
 dependencies = [
-    "eoapi.auth",
-    "stac-fastapi.pgstac==3.0.0a4",
-    "jinja2>=2.11.2,<4.0.0",
-    "starlette-cramjam>=0.3,<0.4",
+    "requests",
+    "fastapi-slim>=0.111.0",
+    "pyjwt",
+    "cryptography",
+    "pydantic-settings>=2",
     "importlib_resources>=1.1.0;python_version<'3.9'",
-    "psycopg_pool",
 ]
 
 [project.optional-dependencies]
@@ -41,8 +43,8 @@ build-backend = "pdm.pep517.api"
 
 [tool.pdm.version]
 source = "file"
-path = "eoapi/stac/__init__.py"
+path = "eoapi/auth/__init__.py"
 
 [tool.pdm.build]
-includes = ["eoapi/stac"]
+includes = ["eoapi/auth"]
 excludes = ["tests/", "**/.mypy_cache", "**/.DS_Store"]

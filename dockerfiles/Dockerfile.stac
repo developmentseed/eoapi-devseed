@@ -4,9 +4,10 @@ FROM ghcr.io/vincentsarago/uvicorn-gunicorn:${PYTHON_VERSION}
 
 ENV CURL_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
 
+COPY runtimes/eoapi/auth /tmp/auth
 COPY runtimes/eoapi/stac /tmp/stac
-RUN python -m pip install /tmp/stac
-RUN rm -rf /tmp/stac
+RUN python -m pip install /tmp/auth /tmp/stac
+RUN rm -rf /tmp/stac /tmp/auth
 
 ENV MODULE_NAME eoapi.stac.app
 ENV VARIABLE_NAME app

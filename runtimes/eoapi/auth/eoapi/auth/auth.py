@@ -1,3 +1,5 @@
+"""eoapi auth."""
+
 import json
 import logging
 import urllib.request
@@ -9,7 +11,8 @@ from fastapi import HTTPException, Security, routing, security, status
 from fastapi.dependencies.utils import get_parameterless_sub_dependant
 from fastapi.security.base import SecurityBase
 from pydantic import AnyHttpUrl
-from pydantic_settings import BaseSettings
+
+from .errors import OidcFetchError
 
 logger = logging.getLogger(__name__)
 
@@ -21,24 +24,6 @@ class Scope(TypedDict, total=False):
     path: str
     method: str
     type: Optional[str]
-
-
-class AuthSettings(BaseSettings):
-    # Swagger UI config for Authorization Code Flow
-    client_id: str = ""
-    use_pkce: bool = True
-    openid_configuration_url: Optional[AnyHttpUrl] = None
-    openid_configuration_internal_url: Optional[AnyHttpUrl] = None
-
-    allowed_jwt_audiences: Optional[Sequence[str]] = []
-
-    public_reads: bool = True
-
-    model_config = {
-        "env_prefix": "EOAPI_AUTH_",
-        "env_file": ".env",
-        "extra": "allow",
-    }
 
 
 @dataclass
@@ -66,6 +51,7 @@ class OidcAuth:
                 raise OidcFetchError(
                     f"Request for OIDC config failed with status {response.status}"
                 )
+
             oidc_config = json.load(response)
             self.jwks_client = jwt.PyJWKClient(oidc_config["jwks_uri"])
 
@@ -101,6 +87,7 @@ class OidcAuth:
                 )
             else:
                 [_, token] = token_parts
+
             # Parse & validate token
             try:
                 payload = jwt.decode(
@@ -110,6 +97,7 @@ class OidcAuth:
                     # NOTE: Audience validation MUST match audience claim if set in token (https://pyjwt.readthedocs.io/en/stable/changelog.html?highlight=audience#id40)
                     audience=allowed_jwt_audiences,
                 )
+
             except jwt.exceptions.InvalidTokenError as e:
                 logger.exception(f"InvalidTokenError: {e=}")
                 raise HTTPException(
@@ -139,9 +127,7 @@ class OidcAuth:
         required_token_scopes: Optional[Sequence[str]] = None,
         dependency: Optional[Callable[..., Any]] = None,
     ):
-        """
-        Apply auth dependencies to a route.
-        """
+        """Apply auth dependencies to a route."""
         # Ignore paths without dependants, e.g. /api, /api.html, /docs/oauth2-redirect
         if not hasattr(api_route, "dependant"):
             logger.warn(
@@ -169,7 +155,3 @@ class OidcAuth:
         # https://github.com/tiangolo/fastapi/blob/58ab733f19846b4875c5b79bfb1f4d1cb7f4823f/fastapi/applications.py#L337-L360
         # https://github.com/tiangolo/fastapi/blob/58ab733f19846b4875c5b79bfb1f4d1cb7f4823f/fastapi/routing.py#L677-L678
         api_route.dependencies.extend([depends])
-
-
-class OidcFetchError(Exception):
-    pass

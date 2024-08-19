@@ -6,8 +6,9 @@ WORKDIR /tmp
 RUN python -m pip install pip -U
 
 COPY runtimes/eoapi/stac /tmp/stac
-RUN python -m pip install "mangum>=0.14,<0.15" /tmp/stac -t /asset --no-binary pydantic
-RUN rm -rf /tmp/stac
+COPY runtimes/eoapi/auth /tmp/auth
+RUN python -m pip install "mangum>=0.14,<0.15" /tmp/auth /tmp/stac -t /asset --no-binary pydantic
+RUN rm -rf /tmp/stac /tmp/auth
 
 # Reduce package size and remove useless files
 RUN cd /asset && find . -type f -name '*.pyc' | while read f; do n=$(echo $f | sed 's/__pycache__\///' | sed 's/.cpython-[0-9]*//'); cp $f $n; done;

@@ -9,8 +9,9 @@ WORKDIR /tmp
 RUN python -m pip install pip -U
 
 COPY runtimes/eoapi/raster /tmp/raster
-RUN python -m pip install "mangum>=0.14,<0.15" /tmp/raster["psycopg-binary"] -t /asset --no-binary pydantic
-RUN rm -rf /tmp/raster
+COPY runtimes/eoapi/auth /tmp/auth
+RUN python -m pip install "mangum>=0.14,<0.15" /tmp/auth /tmp/raster["psycopg-binary"] -t /asset --no-binary pydantic
+RUN rm -rf /tmp/raster /tmp/auth
 
 # Remove system dependencies
 RUN yum remove -y gcc-c++

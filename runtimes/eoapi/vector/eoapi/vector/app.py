@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import jinja2
+from eoapi.auth import AuthSettings, OidcAuth
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.templating import Jinja2Templates
@@ -16,7 +17,8 @@ from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.settings import PostgresSettings
 
 from . import __version__ as eoapi_vector_version
-from . import auth, config, logs
+from .config import ApiSettings
+from .logs import init_logging
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -27,12 +29,12 @@ except ImportError:
 
 CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
-settings = config.ApiSettings()
+settings = ApiSettings()
 postgres_settings = PostgresSettings()
-auth_settings = auth.AuthSettings()
+auth_settings = AuthSettings()
 
 # Logs
-logs.init_logging(
+init_logging(
     debug=settings.debug,
     loggers={
         "botocore.credentials": {
@@ -176,7 +178,7 @@ if settings.debug:
 
 
 if auth_settings.openid_configuration_url and not auth_settings.public_reads:
-    oidc_auth = auth.OidcAuth(
+    oidc_auth = OidcAuth(
         # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
         openid_configuration_url=auth_settings.openid_configuration_url,
         openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
