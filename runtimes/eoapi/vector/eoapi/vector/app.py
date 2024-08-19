@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import jinja2
+from eoapi import auth
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.templating import Jinja2Templates
@@ -16,7 +17,7 @@ from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.settings import PostgresSettings
 
 from . import __version__ as eoapi_vector_version
-from . import auth, config, logs
+from . import config, logs
 
 try:
     from importlib.resources import files as resources_files  # type: ignore

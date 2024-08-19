@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+from eoapi import auth
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
@@ -34,7 +35,7 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
-from . import auth, config, extension, logs
+from . import config, extension, logs
 
 try:
     from importlib.resources import files as resources_files  # type: ignore

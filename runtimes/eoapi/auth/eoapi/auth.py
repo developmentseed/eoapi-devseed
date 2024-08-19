@@ -14,6 +14,9 @@ from pydantic_settings import BaseSettings
 logger = logging.getLogger(__name__)
 
 
+__version__ = "0.1.0"
+
+
 class Scope(TypedDict, total=False):
     """More strict version of Starlette's Scope."""
 

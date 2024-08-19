@@ -1,0 +1,40 @@
+[build-system]
+build-backend = "pdm.pep517.api"
+requires = ["pdm-pep517"]
+
+[tool.pdm.version]
+path = "eoapi/auth.py"
+source = "file"
+
+[tool.pdm.build]
+excludes = ["tests/", "**/.mypy_cache", "**/.DS_Store"]
+includes = ["eoapi"]
+
+[project]
+authors = [
+  {name = "Anthony Lukach", email = "anthony@developmentseed.org"},
+]
+dependencies = [
+  "pydantic-settings>=2.2.1",
+  "pyjwt>=2.9.0",
+  "cryptography>=43.0.0",
+]
+description = "Authentication module for EOAPI"
+dynamic = ["version"]
+license = {text = "MIT"}
+name = "eoapi.auth"
+readme = "README.md"
+requires-python = ">=3.8"
+
+[project.optional-dependencies]
+testing = [
+  "pytest>=6.0",
+  "coverage",
+]
+
+[tool.setuptools]
+include-package-data = true
+py-modules = ["eoapi.auth"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
