@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   # change to official image when available https://github.com/radiantearth/stac-browser/pull/386
   stac-browser:
