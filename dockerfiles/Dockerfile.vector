@@ -5,6 +5,9 @@ FROM ghcr.io/vincentsarago/uvicorn-gunicorn:${PYTHON_VERSION}
 COPY runtimes/eoapi/vector /tmp/vector
 RUN python -m pip install /tmp/vector
 RUN rm -rf /tmp/vector
+COPY runtimes/eoapi/auth /tmp/auth
+RUN pip install /tmp/auth
+RUN rm -rf /tmp/auth
 
 ENV MODULE_NAME eoapi.vector.app
 ENV VARIABLE_NAME app

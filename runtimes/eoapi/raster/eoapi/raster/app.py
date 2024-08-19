@@ -7,6 +7,7 @@ from typing import Dict
 
 import jinja2
 import pystac
+from eoapi import auth
 from fastapi import Depends, FastAPI, Query
 from psycopg import OperationalError
 from psycopg.rows import dict_row
@@ -38,7 +39,7 @@ from titiler.pgstac.factory import (
 from titiler.pgstac.reader import PgSTACReader
 
 from . import __version__ as eoapi_raster_version
-from . import auth, config, logs
+from . import config, logs
 
 settings = config.ApiSettings()
 auth_settings = auth.AuthSettings()
