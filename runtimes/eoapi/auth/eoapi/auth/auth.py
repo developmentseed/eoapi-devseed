@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class OidcAuth:
+class OpenIdConnectAuth:
     openid_configuration_url: AnyHttpUrl
     openid_configuration_internal_url: Optional[AnyHttpUrl] = None
     allowed_jwt_audiences: Optional[Sequence[str]] = None

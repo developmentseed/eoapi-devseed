@@ -177,7 +177,7 @@ if settings.debug:
 
 
 if auth_settings.openid_configuration_url and not auth_settings.public_reads:
-    oidc_auth = auth.OidcAuth(
+    oidc_auth = auth.OpenIdConnectAuth(
         # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
         openid_configuration_url=auth_settings.openid_configuration_url,
         openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
