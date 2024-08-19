@@ -2,46 +2,17 @@ import json
 import logging
 import urllib.request
 from dataclasses import dataclass, field
-from typing import Annotated, Any, Callable, Dict, Optional, Sequence, TypedDict
+from typing import Annotated, Any, Callable, Dict, Optional, Sequence
 
 import jwt
 from fastapi import HTTPException, Security, routing, security, status
 from fastapi.dependencies.utils import get_parameterless_sub_dependant
 from fastapi.security.base import SecurityBase
 from pydantic import AnyHttpUrl
-from pydantic_settings import BaseSettings
+
+from .types import OidcFetchError
 
 logger = logging.getLogger(__name__)
-
-
-__version__ = "0.1.0"
-
-
-class Scope(TypedDict, total=False):
-    """More strict version of Starlette's Scope."""
-
-    # https://github.com/encode/starlette/blob/6af5c515e0a896cbf3f86ee043b88f6c24200bcf/starlette/types.py#L3
-    path: str
-    method: str
-    type: Optional[str]
-
-
-class AuthSettings(BaseSettings):
-    # Swagger UI config for Authorization Code Flow
-    client_id: str = ""
-    use_pkce: bool = True
-    openid_configuration_url: Optional[AnyHttpUrl] = None
-    openid_configuration_internal_url: Optional[AnyHttpUrl] = None
-
-    allowed_jwt_audiences: Optional[Sequence[str]] = []
-
-    public_reads: bool = True
-
-    model_config = {
-        "env_prefix": "EOAPI_AUTH_",
-        "env_file": ".env",
-        "extra": "allow",
-    }
 
 
 @dataclass
@@ -172,7 +143,3 @@ class OidcAuth:
         # https://github.com/tiangolo/fastapi/blob/58ab733f19846b4875c5b79bfb1f4d1cb7f4823f/fastapi/applications.py#L337-L360
         # https://github.com/tiangolo/fastapi/blob/58ab733f19846b4875c5b79bfb1f4d1cb7f4823f/fastapi/routing.py#L677-L678
         api_route.dependencies.extend([depends])
-
-
-class OidcFetchError(Exception):
-    pass
