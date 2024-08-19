@@ -18,6 +18,8 @@ dependencies = [
   "pydantic-settings>=2.2.1",
   "pyjwt>=2.9.0",
   "cryptography>=43.0.0",
+  "fastapi-authorization-gateway>=0.0.3"
+
 ]
 description = "Authentication module for EOAPI"
 dynamic = ["version"]
