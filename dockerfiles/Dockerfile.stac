@@ -7,9 +7,6 @@ ENV CURL_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
 COPY runtimes/eoapi/stac /tmp/stac
 RUN python -m pip install /tmp/stac
 RUN rm -rf /tmp/stac
-COPY runtimes/eoapi/auth /tmp/auth
-RUN python -m pip install /tmp/auth
-RUN rm -rf /tmp/auth
 
 ENV MODULE_NAME eoapi.stac.app
 ENV VARIABLE_NAME app
