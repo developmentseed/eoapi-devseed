@@ -8,7 +8,7 @@ COPY runtimes/eoapi/stac /tmp/stac
 RUN python -m pip install /tmp/stac
 RUN rm -rf /tmp/stac
 COPY runtimes/eoapi/auth /tmp/auth
-RUN pip install /tmp/auth
+RUN python -m pip install /tmp/auth
 RUN rm -rf /tmp/auth
 
 ENV MODULE_NAME eoapi.stac.app
