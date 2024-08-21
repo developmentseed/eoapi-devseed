@@ -7,7 +7,7 @@ from typing import Dict
 
 import jinja2
 import pystac
-from eoapi import auth
+from eoapi.auth_utils import AuthSettings, OpenIdConnectAuth
 from fastapi import Depends, FastAPI, Query
 from psycopg import OperationalError
 from psycopg.rows import dict_row
@@ -39,14 +39,15 @@ from titiler.pgstac.factory import (
 from titiler.pgstac.reader import PgSTACReader
 
 from . import __version__ as eoapi_raster_version
-from . import config, logs
+from .config import ApiSettings
+from .logs import init_logging
 
-settings = config.ApiSettings()
-auth_settings = auth.AuthSettings()
+settings = ApiSettings()
+auth_settings = AuthSettings()
 
 
 # Logs
-logs.init_logging(
+init_logging(
     debug=settings.debug,
     loggers={
         "botocore.credentials": {
@@ -415,7 +416,7 @@ def landing(request: Request):
 
 # Add dependencies to routes
 if auth_settings.openid_configuration_url and not auth_settings.public_reads:
-    oidc_auth = auth.OpenIdConnectAuth(
+    oidc_auth = OpenIdConnectAuth(
         # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
         openid_configuration_url=auth_settings.openid_configuration_url,
         openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
