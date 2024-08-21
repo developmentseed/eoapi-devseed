@@ -167,20 +167,11 @@ async def viewer_page(request: Request):
 
 if auth_settings.openid_configuration_url:
     oidc_auth = OpenIdConnectAuth.from_settings(auth_settings)
-    restricted_prefixes_methods = {
-        "/collections": [
-            "POST",
-            "PUT",
-            "DELETE",
-            *([] if auth_settings.public_reads else ["GET"]),
-        ],
-        "/search": [] if auth_settings.public_reads else ["POST", "GET"],
-    }
+
+    restricted_prefixes = ["/collections", "/search"]
     for route in app.routes:
-        restricted = any(
+        if any(
             route.path.startswith(f"{app.root_path}{prefix}")
-            and set(route.methods).intersection(set(restricted_methods))
-            for prefix, restricted_methods in restricted_prefixes_methods.items()
-        )
-        if restricted:
+            for prefix in restricted_prefixes
+        ):
             oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])

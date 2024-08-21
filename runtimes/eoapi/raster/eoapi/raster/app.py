@@ -415,14 +415,13 @@ def landing(request: Request):
 
 
 # Add dependencies to routes
-if auth_settings.openid_configuration_url and not auth_settings.public_reads:
+if auth_settings.openid_configuration_url:
     oidc_auth = OpenIdConnectAuth.from_settings(auth_settings)
 
-    restricted_prefixes = ["/searches", "/collections"]
+    restricted_prefixes = ["/collections", "/searches"]
     for route in app.routes:
-        if not any(
+        if any(
             route.path.startswith(f"{app.root_path}{prefix}")
             for prefix in restricted_prefixes
         ):
-            continue
-        oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
+            oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
