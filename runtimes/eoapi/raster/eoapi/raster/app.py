@@ -416,15 +416,7 @@ def landing(request: Request):
 
 # Add dependencies to routes
 if auth_settings.openid_configuration_url and not auth_settings.public_reads:
-    oidc_auth = OpenIdConnectAuth(
-        # URL to the OpenID Connect discovery document (https://openid.net/specs/openid-connect-discovery-1_0.html)
-        openid_configuration_url=auth_settings.openid_configuration_url,
-        openid_configuration_internal_url=auth_settings.openid_configuration_internal_url,
-        # Optionally validate the "aud" claim in the JWT
-        allowed_jwt_audiences=auth_settings.allowed_jwt_audiences,
-        # To render scopes form on Swagger UI's login pop-up, populate with mapping of scopes to descriptions
-        oauth2_supported_scopes={},
-    )
+    oidc_auth = OpenIdConnectAuth.from_settings(auth_settings)
 
     restricted_prefixes = ["/searches", "/collections"]
     for route in app.routes:
