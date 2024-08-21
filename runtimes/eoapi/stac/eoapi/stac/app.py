@@ -35,7 +35,9 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
-from . import config, extension, logs
+from .config import ApiSettings
+from .extension import TiTilerExtension
+from .logs import init_logging
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -68,7 +70,7 @@ extensions_map = {
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
     "titiler": (
-        extension.TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
+        TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
         if api_settings.titiler_endpoint
         else None
     ),
