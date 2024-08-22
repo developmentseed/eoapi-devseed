@@ -4,7 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import jinja2
-from eoapi.auth_utils import AuthSettings, OpenIdConnectAuth
+from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.templating import Jinja2Templates
@@ -31,7 +31,7 @@ CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
 settings = ApiSettings()
 postgres_settings = PostgresSettings()
-auth_settings = AuthSettings()
+auth_settings = OpenIdConnectSettings()
 
 # Logs
 init_logging(

@@ -3,7 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
-from eoapi.auth_utils import AuthSettings, OpenIdConnectAuth
+from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
@@ -49,7 +49,7 @@ except ImportError:
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
 api_settings = ApiSettings()
-auth_settings = AuthSettings()
+auth_settings = OpenIdConnectSettings()
 settings = Settings(enable_response_models=True)
 
 # Logs

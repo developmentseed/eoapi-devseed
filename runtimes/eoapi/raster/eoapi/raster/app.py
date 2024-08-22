@@ -7,7 +7,7 @@ from typing import Dict
 
 import jinja2
 import pystac
-from eoapi.auth_utils import AuthSettings, OpenIdConnectAuth
+from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import Depends, FastAPI, Query
 from psycopg import OperationalError
 from psycopg.rows import dict_row
@@ -43,7 +43,7 @@ from .config import ApiSettings
 from .logs import init_logging
 
 settings = ApiSettings()
-auth_settings = AuthSettings()
+auth_settings = OpenIdConnectSettings()
 
 
 # Logs
