@@ -4,6 +4,7 @@ import logging
 from contextlib import asynccontextmanager
 
 import jinja2
+from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
 from starlette.templating import Jinja2Templates
@@ -16,7 +17,8 @@ from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.settings import PostgresSettings
 
 from . import __version__ as eoapi_vector_version
-from . import config, logs
+from .config import ApiSettings
+from .logs import init_logging
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -27,11 +29,12 @@ except ImportError:
 
 CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
-settings = config.ApiSettings()
+settings = ApiSettings()
 postgres_settings = PostgresSettings()
+auth_settings = OpenIdConnectSettings()
 
 # Logs
-logs.init_logging(
+init_logging(
     debug=settings.debug,
     loggers={
         "botocore.credentials": {
@@ -88,6 +91,10 @@ app = FastAPI(
     docs_url="/api.html",
     lifespan=lifespan,
     root_path=settings.root_path,
+    swagger_ui_init_oauth={
+        "clientId": auth_settings.client_id,
+        "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+    },
 )
 
 # add eoapi_vector templates and tipg templates
@@ -168,3 +175,15 @@ if settings.debug:
         )
 
         return request.app.state.collection_catalog
+
+
+if auth_settings.openid_configuration_url:
+    oidc_auth = OpenIdConnectAuth.from_settings(auth_settings)
+
+    restricted_prefixes = ["/collections"]
+    for route in app.routes:
+        if any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            for prefix in restricted_prefixes
+        ):
+            oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])

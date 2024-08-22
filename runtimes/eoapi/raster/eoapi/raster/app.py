@@ -7,6 +7,7 @@ from typing import Dict
 
 import jinja2
 import pystac
+from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import Depends, FastAPI, Query
 from psycopg import OperationalError
 from psycopg.rows import dict_row
@@ -38,12 +39,15 @@ from titiler.pgstac.factory import (
 from titiler.pgstac.reader import PgSTACReader
 
 from . import __version__ as eoapi_raster_version
-from . import config, logs
+from .config import ApiSettings
+from .logs import init_logging
 
-settings = config.ApiSettings()
+settings = ApiSettings()
+auth_settings = OpenIdConnectSettings()
+
 
 # Logs
-logs.init_logging(
+init_logging(
     debug=settings.debug,
     loggers={
         "botocore.credentials": {
@@ -95,6 +99,10 @@ app = FastAPI(
     docs_url="/api.html",
     root_path=settings.root_path,
     lifespan=lifespan,
+    swagger_ui_init_oauth={
+        "clientId": auth_settings.client_id,
+        "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+    },
 )
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
 add_exception_handlers(app, MOSAIC_STATUS_CODES)
@@ -404,3 +412,16 @@ def landing(request: Request):
             "urlparams": str(request.url.query),
         },
     )
+
+
+# Add dependencies to routes
+if auth_settings.openid_configuration_url:
+    oidc_auth = OpenIdConnectAuth.from_settings(auth_settings)
+
+    restricted_prefixes = ["/collections", "/searches"]
+    for route in app.routes:
+        if any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            for prefix in restricted_prefixes
+        ):
+            oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])

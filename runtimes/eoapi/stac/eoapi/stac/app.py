@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
@@ -34,7 +35,9 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
-from . import config, extension, logs
+from .config import ApiSettings
+from .extension import TiTilerExtension
+from .logs import init_logging
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -45,11 +48,12 @@ except ImportError:
 
 templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
 
-api_settings = config.ApiSettings()
+api_settings = ApiSettings()
+auth_settings = OpenIdConnectSettings()
 settings = Settings(enable_response_models=True)
 
 # Logs
-logs.init_logging(debug=api_settings.debug)
+init_logging(debug=api_settings.debug)
 logger = logging.getLogger(__name__)
 
 # Extensions
@@ -66,7 +70,7 @@ extensions_map = {
     "filter": FilterExtension(client=FiltersClient()),
     "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
     "titiler": (
-        extension.TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
+        TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
         if api_settings.titiler_endpoint
         else None
     ),
@@ -129,6 +133,10 @@ api = StacApi(
         openapi_url="/api",
         docs_url="/api.html",
         redoc_url=None,
+        swagger_ui_init_oauth={
+            "clientId": auth_settings.client_id,
+            "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
+        },
     ),
     title=api_settings.name,
     description=api_settings.name,
@@ -155,3 +163,15 @@ async def viewer_page(request: Request):
         },
         media_type="text/html",
     )
+
+
+if auth_settings.openid_configuration_url:
+    oidc_auth = OpenIdConnectAuth.from_settings(auth_settings)
+
+    restricted_prefixes = ["/collections", "/search"]
+    for route in app.routes:
+        if any(
+            route.path.startswith(f"{app.root_path}{prefix}")
+            for prefix in restricted_prefixes
+        ):
+            oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
