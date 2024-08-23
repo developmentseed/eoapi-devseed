@@ -169,3 +169,5 @@ node_modules/
 
 .ruff_cache/
 .env-cdk
+
+.envrc

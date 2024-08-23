@@ -1,5 +1,7 @@
-eoapi-cdk==7.2.0
+eoapi-cdk==7.2.1
 pydantic==2.7
 pydantic-settings[yaml]==2.2.1
+pystac_client==0.8.3
+pypgstac[psycopg]==0.8.5
 boto3==1.24.15
 typing-extensions

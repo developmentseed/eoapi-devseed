@@ -1,0 +1,12 @@
+ARG PYTHON_VERSION=3.11
+
+FROM ghcr.io/vincentsarago/uvicorn-gunicorn:${PYTHON_VERSION}
+
+ENV CURL_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
+
+COPY runtimes/business/logic /tmp/logic
+RUN pip install /tmp/logic
+RUN rm -rf /tmp/logic
+
+ENV MODULE_NAME business.logic.main
+ENV VARIABLE_NAME app

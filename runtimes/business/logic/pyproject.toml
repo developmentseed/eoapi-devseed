@@ -1,0 +1,30 @@
+[project]
+name = "business.logic"
+description = "Business logic"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "Henry Rodman", email = "henry@developmentseed.com"},
+]
+license = {text = "MIT"}
+dynamic = ["version"]
+dependencies = [
+    "asyncpg",
+    "fastapi>=0.112.1",
+    "geoalchemy2>=0.15.2",
+    "geojson_pydantic>=1.1.0",
+    "pydantic_settings>=2.4.0",
+    "sqlmodel>=0.0.21",
+]
+
+[build-system]
+requires = ["pdm-pep517"]
+build-backend = "pdm.pep517.api"
+
+[tool.pdm.version]
+source = "file"
+path = "business/logic/__init__.py"
+
+[tool.pdm.build]
+includes = ["business/logic"]
+excludes = ["tests/", "**/.mypy_cache", "**/.DS_Store"]
