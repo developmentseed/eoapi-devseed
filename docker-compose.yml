@@ -127,14 +127,15 @@ services:
       - HOST=0.0.0.0
       - PORT=8083
       - WEB_CONCURRENCY=10
-      - POSTGRES_USER=username
-      - POSTGRES_PASS=password
+      - POSTGRES_USER=business
+      - POSTGRES_PASS=casual
       - POSTGRES_DBNAME=postgis
       - POSTGRES_HOST=database
       - POSTGRES_PORT=5432
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=10
       - EOAPI_VECTOR_DEBUG=TRUE
+      - EOAPI_VECTOR_SCHEMAS=["business"]
     env_file:
       - path: .env
         required: false
@@ -167,6 +168,7 @@ services:
     command: postgres -N 500
     volumes:
       - ./.pgdata:/var/lib/postgresql/data
+      - ./scripts/init-business-user.sql:/docker-entrypoint-initdb.d/zzz-init-business-user.sql
 
 networks:
   default:

@@ -58,8 +58,7 @@ async def lifespan(app: FastAPI):
     await connect_to_db(
         app,
         settings=postgres_settings,
-        # We enable both pgstac and public schemas (pgstac will be used by custom functions)
-        schemas=["pgstac", "public"],
+        schemas=settings.schemas,
         user_sql_files=list(CUSTOM_SQL_DIRECTORY.glob("*.sql")),  # type: ignore
     )
 
@@ -67,7 +66,7 @@ async def lifespan(app: FastAPI):
     await register_collection_catalog(
         app,
         # For the Tables' Catalog we only use the `public` schema
-        schemas=["public"],
+        schemas=settings.schemas,
         # We exclude public functions
         exclude_function_schemas=["public"],
         # We allow non-spatial tables
