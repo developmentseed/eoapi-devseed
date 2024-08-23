@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (
+    EmptyRequest,
     ItemCollectionUri,
     create_get_request_model,
     create_post_request_model,
@@ -20,6 +21,7 @@ from stac_fastapi.extensions.core import (
     TokenPaginationExtension,
     TransactionExtension,
 )
+from stac_fastapi.extensions.core.collection_search import CollectionSearchExtension
 from stac_fastapi.extensions.third_party import BulkTransactionExtension
 from stac_fastapi.pgstac.config import Settings
 from stac_fastapi.pgstac.core import CoreCrudClient
@@ -74,16 +76,19 @@ extensions_map = {
         if api_settings.titiler_endpoint
         else None
     ),
+    "collection_search": CollectionSearchExtension(),
 }
 
-if enabled_extensions := api_settings.extensions:
-    extensions = [
-        extensions_map.get(name)
-        for name in enabled_extensions
-        if name in extensions_map
-    ]
-else:
-    extensions = list(extensions_map.values())
+enabled_extensions = api_settings.extensions or list(extensions_map.keys())
+extensions = [
+    extension for key, extension in extensions_map.items() if key in enabled_extensions
+]
+
+collections_get_request_model = (
+    extensions_map["collection_search"].GET
+    if "collection_search" in enabled_extensions
+    else EmptyRequest
+)
 
 
 @asynccontextmanager
@@ -143,6 +148,7 @@ api = StacApi(
     settings=settings,
     extensions=extensions,
     client=CoreCrudClient(post_request_model=search_post_model),
+    collections_get_request_model=collections_get_request_model,
     items_get_request_model=items_get_model,
     search_get_request_model=search_get_model,
     search_post_request_model=search_post_model,
