@@ -238,9 +238,9 @@ def test_collections():
 
 
 def test_cog_endpoints():
-    """test /cog endpoints"""
+    """test /external endpoints"""
     resp = httpx.get(
-        f"{raster_endpoint}/cog/info",
+        f"{raster_endpoint}/external/info",
         params={
             "url": "https://noaa-eri-pds.s3.us-east-1.amazonaws.com/2020_Nashville_Tornado/20200307a_RGB/20200307aC0854500w361030n.tif",
         },
