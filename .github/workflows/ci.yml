@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Run pre-commit
         run: |
@@ -36,11 +36,11 @@ jobs:
         run: docker compose up -d
 
       - name: install lib postgres
-        uses: nyurik/action-setup-postgis@v1
+        uses: nyurik/action-setup-postgis@v2
 
       - name: Install python dependencies
         run: |
-          python -m pip install pytest httpx pypgstac==0.8.5 psycopg[pool]
+          python -m pip install pytest httpx pypgstac==0.9.2 psycopg[pool]
 
       - name: Ingest Stac Items/Collection
         run: |

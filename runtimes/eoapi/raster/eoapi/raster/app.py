@@ -7,6 +7,7 @@ from typing import Dict
 
 import jinja2
 import pystac
+import rasterio
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import Depends, FastAPI, Query
 from psycopg import OperationalError
@@ -17,6 +18,7 @@ from starlette.requests import Request
 from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
+from titiler.core import __version__ as titiler_version
 from titiler.core.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from titiler.core.factory import (
     AlgorithmFactory,
@@ -28,8 +30,14 @@ from titiler.core.factory import (
 from titiler.core.middleware import CacheControlMiddleware
 from titiler.extensions import cogViewerExtension
 from titiler.mosaic.errors import MOSAIC_STATUS_CODES
+from titiler.pgstac import __version__ as titiler_pgstac_version
 from titiler.pgstac.db import close_db_connection, connect_to_db
-from titiler.pgstac.dependencies import CollectionIdParams, ItemIdParams, SearchIdParams
+from titiler.pgstac.dependencies import (
+    AssetIdParams,
+    CollectionIdParams,
+    ItemIdParams,
+    SearchIdParams,
+)
 from titiler.pgstac.extensions import searchInfoExtension
 from titiler.pgstac.factory import (
     MosaicTilerFactory,
@@ -170,8 +178,6 @@ add_search_register_route(
         searches.pixel_selection_dependency,
         searches.tile_dependency,
         searches.process_dependency,
-        searches.rescale_dependency,
-        searches.colormap_dependency,
         searches.render_dependency,
         searches.pgstac_dependency,
         searches.reader_dependency,
@@ -257,15 +263,31 @@ app.include_router(
 
 
 ###############################################################################
-# COG Endpoints
-cog = TilerFactory(
-    router_prefix="/cog",
+# STAC Assets Endpoints
+asset = TilerFactory(
+    path_dependency=AssetIdParams,
+    router_prefix="/collections/{collection_id}/items/{item_id}/assets/{asset_id}",
+    add_viewer=True,
+)
+app.include_router(
+    asset.router,
+    tags=["STAC Asset"],
+    prefix="/collections/{collection_id}/items/{item_id}/assets/{asset_id}",
+)
+
+###############################################################################
+# External Dataset Endpoints
+external_cog = TilerFactory(
+    router_prefix="/external",
     extensions=[
         cogViewerExtension(),
     ],
 )
-
-app.include_router(cog.router, prefix="/cog", tags=["Cloud Optimized GeoTIFF"])
+app.include_router(
+    external_cog.router,
+    tags=["External Dataset"],
+    prefix="/external",
+)
 
 ###############################################################################
 # Tiling Schemes Endpoints
@@ -297,12 +319,22 @@ def ping(
     """Health check."""
     try:
         with app.state.dbpool.connection(timeout) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT version from pgstac.migrations;")
-                version = cursor.fetchone()
-        return {"database_online": True, "pgstac_version": version}
+            conn.execute("SELECT 1")
+            db_online = True
     except (OperationalError, PoolTimeout):
-        return {"database_online": False}
+        db_online = False
+
+    return {
+        "database_online": db_online,
+        "versions": {
+            "titiler": titiler_version,
+            "titiler.pgstac": titiler_pgstac_version,
+            "rasterio": rasterio.__version__,
+            "gdal": rasterio.__gdal_version__,
+            "proj": rasterio.__proj_version__,
+            "geos": rasterio.__geos_version__,
+        },
+    }
 
 
 ###############################################################################
@@ -342,14 +374,20 @@ def landing(request: Request):
                 "rel": "data",
             },
             {
-                "title": "eoAPI Virtual Mosaic builder",
+                "title": "eoAPI Virtual Mosaic (Search) builder",
                 "href": str(app.url_path_for("virtual_mosaic_builder")),
                 "type": "text/html",
                 "rel": "data",
             },
             {
-                "title": "eoAPI Virtual Mosaic viewer (template URL)",
-                "href": str(app.url_path_for("map_viewer", search_id="{search_id}")),
+                "title": "eoAPI Virtual Mosaic (Search) viewer (template URL)",
+                "href": str(
+                    app.url_path_for(
+                        "map_viewer",
+                        search_id="{search_id}",
+                        tileMatrixSetId="{tileMatrixSetId}",
+                    )
+                ),
                 "type": "text/html",
                 "rel": "data",
                 "templated": True,
@@ -357,7 +395,11 @@ def landing(request: Request):
             {
                 "title": "eoAPI Collection viewer (template URL)",
                 "href": str(
-                    app.url_path_for("map_viewer", collection_id="{collection_id}")
+                    app.url_path_for(
+                        "map_viewer",
+                        collection_id="{collection_id}",
+                        tileMatrixSetId="{tileMatrixSetId}",
+                    )
                 ),
                 "type": "text/html",
                 "rel": "data",
@@ -370,6 +412,7 @@ def landing(request: Request):
                         "map_viewer",
                         collection_id="{collection_id}",
                         item_id="{item_id}",
+                        tileMatrixSetId="{tileMatrixSetId}",
                     )
                 ),
                 "type": "text/html",

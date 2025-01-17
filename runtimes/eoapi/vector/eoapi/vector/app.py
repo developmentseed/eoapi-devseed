@@ -2,6 +2,7 @@
 
 import logging
 from contextlib import asynccontextmanager
+from importlib.resources import files as resources_files  # type: ignore
 
 import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
@@ -19,13 +20,6 @@ from tipg.settings import PostgresSettings
 from . import __version__ as eoapi_vector_version
 from .config import ApiSettings
 from .logs import init_logging
-
-try:
-    from importlib.resources import files as resources_files  # type: ignore
-except ImportError:
-    # Try backported to PY<39 `importlib_resources`.
-    from importlib_resources import files as resources_files  # type: ignore
-
 
 CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 

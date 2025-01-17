@@ -18,7 +18,7 @@ module.exports = {
     apiCatalogPriority: null,
     useTileLayerAsFallback: true,
     displayGeoTiffByDefault: false,
-    buildTileUrlTemplate: ({href, asset}) => "http://0.0.0.0:8082/cog/tiles/{z}/{x}/{y}@2x?url=" + encodeURIComponent(asset.href.startsWith("/vsi") ? asset.href : href),
+    buildTileUrlTemplate: ({href, asset}) => "http://0.0.0.0:8082/external/tiles/WebMercatorQuad/{z}/{x}/{y}@2x?url=" + encodeURIComponent(asset.href.startsWith("/vsi") ? asset.href : href),
     stacProxyUrl: null,
     pathPrefix: "/",
     historyMode: "history",
