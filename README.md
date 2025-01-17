@@ -34,7 +34,7 @@ The dynamic tiler deployed within `eoapi-devseed` is built on top of [titiler-pg
 The service includes all the default endpoints from **titiler-pgstac** application and:
 
 - `/`: a custom landing page with links to the different endpoints
-- `/mosaic/builder`: a virtual mosaic builder UI that helps create and register STAC Search queries
+- `/searches/builder`: a virtual mosaic builder UI that helps create and register STAC Search queries
 - `/collections`: a secret (not in OpenAPI documentation) endpoint used in the mosaic-builder page
 - `/collections/{collection_id}/items/{item_id}/viewer`: a simple STAC Item viewer
 

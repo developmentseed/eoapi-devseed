@@ -3,6 +3,7 @@
 import logging
 from contextlib import asynccontextmanager
 
+import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
@@ -39,14 +40,14 @@ from .config import ApiSettings
 from .extension import TiTilerExtension
 from .logs import init_logging
 
-try:
-    from importlib.resources import files as resources_files  # type: ignore
-except ImportError:
-    # Try backported to PY<39 `importlib_resources`.
-    from importlib_resources import files as resources_files  # type: ignore
-
-
-templates = Jinja2Templates(directory=str(resources_files(__package__) / "templates"))  # type: ignore
+jinja2_env = jinja2.Environment(
+    loader=jinja2.ChoiceLoader(
+        [
+            jinja2.PackageLoader(__package__, "templates"),
+        ]
+    )
+)
+templates = Jinja2Templates(env=jinja2_env)
 
 api_settings = ApiSettings()
 auth_settings = OpenIdConnectSettings()

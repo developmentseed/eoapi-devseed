@@ -31,7 +31,7 @@ def test_mosaic_api():
     assert resp.json()[0]["id"] == "20200307aC0853900w361030"
 
     resp = httpx.get(
-        f"{raster_endpoint}/searches/{searchid}/tiles/15/8589/12849/assets"
+        f"{raster_endpoint}/searches/{searchid}/tiles/WebMercatorQuad/15/8589/12849/assets"
     )
     assert resp.status_code == 200
     assert len(resp.json()) == 1
@@ -40,7 +40,7 @@ def test_mosaic_api():
 
     z, x, y = 15, 8589, 12849
     resp = httpx.get(
-        f"{raster_endpoint}/searches/{searchid}/tiles/{z}/{x}/{y}",
+        f"{raster_endpoint}/searches/{searchid}/tiles/WebMercatorQuad/{z}/{x}/{y}",
         params={"assets": "cog"},
         headers={"Accept-Encoding": "br, gzip"},
         timeout=10.0,
@@ -61,7 +61,7 @@ def test_mosaic_collection_api():
     assert resp.json()[0]["id"] == "20200307aC0853900w361030"
 
     resp = httpx.get(
-        f"{raster_endpoint}/collections/noaa-emergency-response/tiles/15/8589/12849/assets"
+        f"{raster_endpoint}/collections/noaa-emergency-response/tiles/WebMercatorQuad/15/8589/12849/assets"
     )
     assert resp.status_code == 200
     assert len(resp.json()) == 1
@@ -70,7 +70,7 @@ def test_mosaic_collection_api():
 
     z, x, y = 15, 8589, 12849
     resp = httpx.get(
-        f"{raster_endpoint}/collections/noaa-emergency-response/tiles/{z}/{x}/{y}",
+        f"{raster_endpoint}/collections/noaa-emergency-response/tiles/WebMercatorQuad/{z}/{x}/{y}",
         params={"assets": "cog"},
         headers={"Accept-Encoding": "br, gzip"},
         timeout=10.0,
@@ -208,7 +208,7 @@ def test_item():
     assert resp.json() == ["cog"]
 
     resp = httpx.get(
-        f"{raster_endpoint}/collections/noaa-emergency-response/items/20200307aC0853300w361200/tilejson.json",
+        f"{raster_endpoint}/collections/noaa-emergency-response/items/20200307aC0853300w361200/WebMercatorQuad/tilejson.json",
         params={
             "assets": "cog",
         },
