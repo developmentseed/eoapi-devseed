@@ -104,6 +104,7 @@ class eoAPIStack(Stack):
             self,
             "pgstac-db",
             vpc=vpc,
+            add_pgbouncer=True,
             engine=aws_rds.DatabaseInstanceEngine.postgres(
                 version=aws_rds.PostgresEngineVersion.VER_14
             ),
@@ -122,7 +123,12 @@ class eoAPIStack(Stack):
                 "mosaic_index": True,
             },
         )
-        pgstac_db.db.connections.allow_default_port_from_any_ipv4()
+
+        # allow connections from any ipv4 to pgbouncer instance security group
+        assert pgstac_db.security_group
+        pgstac_db.security_group.add_ingress_rule(
+            aws_ec2.Peer.any_ipv4(), aws_ec2.Port.tcp(5432)
+        )
 
         #######################################################################
         # Raster service
@@ -148,7 +154,7 @@ class eoAPIStack(Stack):
                     "port"
                 ).to_string(),
             },
-            db=pgstac_db.db,
+            db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
             # If the db is not in the public subnet then we need to put
             # the lambda within the VPC
@@ -216,7 +222,7 @@ class eoAPIStack(Stack):
                 "EOAPI_STAC_TITILER_ENDPOINT": raster.url.strip("/"),
                 "EOAPI_STAC_EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler"]',
             },
-            db=pgstac_db.db,
+            db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
             # If the db is not in the public subnet then we need to put
             # the lambda within the VPC
@@ -259,7 +265,7 @@ class eoAPIStack(Stack):
         TiPgApiLambda(
             self,
             "vector-api",
-            db=pgstac_db.db,
+            db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
             api_env={
                 "EOAPI_VECTOR_NAME": app_config.build_service_name("vector"),
@@ -342,7 +348,7 @@ class eoAPIStack(Stack):
                 stage=app_config.stage,
                 data_access_role=data_access_role,
                 stac_db_secret=pgstac_db.pgstac_secret,
-                stac_db_security_group=pgstac_db.db.connections.security_groups[0],
+                stac_db_security_group=pgstac_db.security_group,
                 # If the db is not in the public subnet then we need to put
                 # the lambda within the VPC
                 vpc=vpc if not app_config.public_db_subnet else None,
