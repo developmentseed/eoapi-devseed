@@ -1,0 +1,23 @@
+[project]
+name = "eoapi-devseed"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []
+
+[dependency-groups]
+deploy = [
+    "boto3==1.24.15",
+    "eoapi-cdk==7.4.1",
+    "pydantic-settings[yaml]==2.2.1",
+    "pydantic==2.7",
+    "typing-extensions>=4.12.2",
+]
+dev = [
+    "httpx>=0.28.1",
+    "pre-commit>=4.1.0",
+    "psycopg[pool]>=3.2.4",
+    "pypgstac==0.9.2",
+    "pytest>=8.3.4",
+]
