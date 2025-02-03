@@ -77,6 +77,7 @@ jobs:
       - name: Create config file
         run: |
           echo "${{ vars.CONFIG_YAML }}" > config.yaml
+          cat config.yaml
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
