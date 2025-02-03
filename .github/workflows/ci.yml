@@ -100,8 +100,8 @@ jobs:
           uv run --only-group deploy npm install
 
       - name: CDK Synth
-        run: uv run --only-group deploy npx cdk -- synth
+        run: uv run --only-group deploy npx cdk synth --all
       
       - name: CDK Deploy
         run: |
-          uv run --only-group deploy npx cdk -- deploy --require-approval never
+          uv run --only-group deploy npx cdk deploy --all --require-approval never
