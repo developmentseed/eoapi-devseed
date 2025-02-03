@@ -76,7 +76,7 @@ jobs:
           echo "${{ vars.CONFIG_YAML }}" > config.yaml
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::390960605471:role/eoapi-devseed 
           role-session-name: eoapi-devseed
