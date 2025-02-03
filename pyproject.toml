@@ -9,7 +9,7 @@ dependencies = []
 [dependency-groups]
 deploy = [
     "boto3==1.24.15",
-    "eoapi-cdk==7.4.1",
+    "eoapi-cdk==7.4.2",
     "pydantic-settings[yaml]==2.2.1",
     "pydantic==2.7",
     "typing-extensions>=4.12.2",
