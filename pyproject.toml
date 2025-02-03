@@ -13,6 +13,7 @@ deploy = [
     "pydantic-settings[yaml]==2.2.1",
     "pydantic==2.7",
     "typing-extensions>=4.12.2",
+    "aws-cdk-lib==2.130.0",
 ]
 dev = [
     "httpx>=0.28.1",
