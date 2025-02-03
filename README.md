@@ -88,6 +88,9 @@ Install python dependencies with
 uv sync --group deploy
 ```
 
+> [!NOTE]
+> [install `uv`](https://docs.astral.sh/uv/getting-started/installation/#installing-uv)
+
 And node dependencies with
 
 ```

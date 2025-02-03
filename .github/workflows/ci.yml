@@ -13,6 +13,9 @@ on:
       - '.github/workflows/ci.yml'
       - '.pre-commit-config.yaml'
   pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   tests:
