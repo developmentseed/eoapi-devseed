@@ -90,7 +90,7 @@ templates = Jinja2Templates(env=jinja2_env)
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
     logger.debug("Connecting to db...")
-    await connect_to_db(app)
+    await connect_to_db(app, settings=settings.load_postgres_settings())
     logger.debug("Connected to db.")
 
     yield

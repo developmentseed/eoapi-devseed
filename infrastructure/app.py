@@ -136,23 +136,8 @@ class eoAPIStack(Stack):
             self,
             "raster-api",
             api_env={
-                "EOAPI_RASTER_NAME": app_config.build_service_name("raster"),
+                "NAME": app_config.build_service_name("raster"),
                 "description": f"{app_config.stage} Raster API",
-                "POSTGRES_HOST": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "host"
-                ).to_string(),
-                "POSTGRES_DBNAME": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "dbname"
-                ).to_string(),
-                "POSTGRES_USER": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "username"
-                ).to_string(),
-                "POSTGRES_PASS": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "password"
-                ).to_string(),
-                "POSTGRES_PORT": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "port"
-                ).to_string(),
             },
             db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
@@ -199,28 +184,10 @@ class eoAPIStack(Stack):
             self,
             "stac-api",
             api_env={
-                "EOAPI_STAC_NAME": app_config.build_service_name("stac"),
+                "NAME": app_config.build_service_name("stac"),
                 "description": f"{app_config.stage} STAC API",
-                "POSTGRES_HOST_READER": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "host"
-                ).to_string(),
-                "POSTGRES_HOST_WRITER": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "host"
-                ).to_string(),
-                "POSTGRES_DBNAME": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "dbname"
-                ).to_string(),
-                "POSTGRES_USER": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "username"
-                ).to_string(),
-                "POSTGRES_PASS": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "password"
-                ).to_string(),
-                "POSTGRES_PORT": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "port"
-                ).to_string(),
-                "EOAPI_STAC_TITILER_ENDPOINT": raster.url.strip("/"),
-                "EOAPI_STAC_EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler"]',
+                "TITILER_ENDPOINT": raster.url.strip("/"),
+                "EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler"]',
             },
             db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
@@ -268,23 +235,8 @@ class eoAPIStack(Stack):
             db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
             api_env={
-                "EOAPI_VECTOR_NAME": app_config.build_service_name("vector"),
+                "NAME": app_config.build_service_name("vector"),
                 "description": f"{app_config.stage} tipg API",
-                "POSTGRES_HOST": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "host"
-                ).to_string(),
-                "POSTGRES_DBNAME": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "dbname"
-                ).to_string(),
-                "POSTGRES_USER": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "username"
-                ).to_string(),
-                "POSTGRES_PASS": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "password"
-                ).to_string(),
-                "POSTGRES_PORT": pgstac_db.pgstac_secret.secret_value_from_json(
-                    "port"
-                ).to_string(),
             },
             # If the db is not in the public subnet then we need to put
             # the lambda within the VPC
