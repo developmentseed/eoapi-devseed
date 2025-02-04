@@ -9,18 +9,28 @@ from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (
+    EmptyRequest,
     ItemCollectionUri,
     create_get_request_model,
     create_post_request_model,
     create_request_model,
 )
 from stac_fastapi.extensions.core import (
+    CollectionSearchExtension,
+    CollectionSearchFilterExtension,
     FieldsExtension,
-    FilterExtension,
+    FreeTextExtension,
+    ItemCollectionFilterExtension,
+    OffsetPaginationExtension,
+    SearchFilterExtension,
     SortExtension,
     TokenPaginationExtension,
     TransactionExtension,
 )
+from stac_fastapi.extensions.core.fields import FieldsConformanceClasses
+from stac_fastapi.extensions.core.free_text import FreeTextConformanceClasses
+from stac_fastapi.extensions.core.query import QueryConformanceClasses
+from stac_fastapi.extensions.core.sort import SortConformanceClasses
 from stac_fastapi.extensions.third_party import BulkTransactionExtension
 from stac_fastapi.pgstac.core import CoreCrudClient
 from stac_fastapi.pgstac.db import close_db_connection, connect_to_db
@@ -52,52 +62,119 @@ api_settings = ApiSettings()
 auth_settings = OpenIdConnectSettings()
 settings = api_settings.load_postgres_settings()
 
+enabled_extensions = api_settings.extensions or []
+
 # Logs
 init_logging(debug=api_settings.debug)
 logger = logging.getLogger(__name__)
 
 # Extensions
-extensions_map = {
+# application extensions
+application_extensions_map = {
     "transaction": TransactionExtension(
         client=TransactionsClient(),
         settings=settings,
         response_class=ORJSONResponse,
     ),
+    "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
+}
+if "titiler" in enabled_extensions and api_settings.titiler_endpoint:
+    application_extensions_map["titiler"] = TiTilerExtension(
+        titiler_endpoint=api_settings.titiler_endpoint
+    )
+
+# search extensions
+search_extensions_map = {
     "query": QueryExtension(),
     "sort": SortExtension(),
     "fields": FieldsExtension(),
+    "filter": SearchFilterExtension(client=FiltersClient()),
     "pagination": TokenPaginationExtension(),
-    "filter": FilterExtension(client=FiltersClient()),
-    "bulk_transactions": BulkTransactionExtension(client=BulkTransactionsClient()),
-    "titiler": (
-        TiTilerExtension(titiler_endpoint=api_settings.titiler_endpoint)
-        if api_settings.titiler_endpoint
-        else None
-    ),
 }
 
-if enabled_extensions := api_settings.extensions:
-    extensions = [
-        extensions_map.get(name)
-        for name in enabled_extensions
-        if name in extensions_map
+# collection_search extensions
+cs_extensions_map = {
+    "query": QueryExtension(conformance_classes=[QueryConformanceClasses.COLLECTIONS]),
+    "sort": SortExtension(conformance_classes=[SortConformanceClasses.COLLECTIONS]),
+    "fields": FieldsExtension(
+        conformance_classes=[FieldsConformanceClasses.COLLECTIONS]
+    ),
+    "filter": CollectionSearchFilterExtension(client=FiltersClient()),
+    "free_text": FreeTextExtension(
+        conformance_classes=[FreeTextConformanceClasses.COLLECTIONS],
+    ),
+    "pagination": OffsetPaginationExtension(),
+}
+
+# item_collection extensions
+itm_col_extensions_map = {
+    "query": QueryExtension(
+        conformance_classes=[QueryConformanceClasses.ITEMS],
+    ),
+    "sort": SortExtension(
+        conformance_classes=[SortConformanceClasses.ITEMS],
+    ),
+    "fields": FieldsExtension(conformance_classes=[FieldsConformanceClasses.ITEMS]),
+    "filter": ItemCollectionFilterExtension(client=FiltersClient()),
+    "pagination": TokenPaginationExtension(),
+}
+
+application_extensions = [
+    extension
+    for key, extension in application_extensions_map.items()
+    if key in enabled_extensions
+]
+
+# Request Models
+# /search models
+search_extensions = [
+    extension
+    for key, extension in search_extensions_map.items()
+    if key in enabled_extensions
+]
+post_request_model = create_post_request_model(
+    search_extensions, base_model=PgstacSearch
+)
+get_request_model = create_get_request_model(search_extensions)
+application_extensions.extend(search_extensions)
+
+# /collections/{collectionId}/items model
+items_get_request_model = ItemCollectionUri
+itm_col_extensions = [
+    extension
+    for key, extension in itm_col_extensions_map.items()
+    if key in enabled_extensions
+]
+if itm_col_extensions:
+    items_get_request_model = create_request_model(
+        model_name="ItemCollectionUri",
+        base_model=ItemCollectionUri,
+        extensions=itm_col_extensions,
+        request_type="GET",
+    )
+    application_extensions.extend(itm_col_extensions)
+
+# /collections model
+collections_get_request_model = EmptyRequest
+if "collection_search" in enabled_extensions:
+    cs_extensions = [
+        extension
+        for key, extension in cs_extensions_map.items()
+        if key in enabled_extensions
     ]
-else:
-    extensions = list(extensions_map.values())
+    collection_search_extension = CollectionSearchExtension.from_extensions(
+        cs_extensions
+    )
+    collections_get_request_model = collection_search_extension.GET
+    application_extensions.append(collection_search_extension)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
-    logger.debug("Connecting to db...")
     await connect_to_db(app)
-    logger.debug("Connected to db.")
-
     yield
-
-    logger.debug("Closing db connections...")
     await close_db_connection(app)
-    logger.debug("Closed db connection.")
 
 
 # Middlewares
@@ -112,19 +189,6 @@ if api_settings.cors_origins:
             allow_headers=["*"],
         )
     )
-
-# Custom Models
-items_get_model = ItemCollectionUri
-if any(isinstance(ext, TokenPaginationExtension) for ext in extensions):
-    items_get_model = create_request_model(
-        model_name="ItemCollectionUri",
-        base_model=ItemCollectionUri,
-        mixins=[TokenPaginationExtension().GET],
-        request_type="GET",
-    )
-
-search_get_model = create_get_request_model(extensions)
-search_post_model = create_post_request_model(extensions, base_model=PgstacSearch)
 
 api = StacApi(
     app=FastAPI(
@@ -141,11 +205,12 @@ api = StacApi(
     title=api_settings.name,
     description=api_settings.name,
     settings=settings,
-    extensions=extensions,
-    client=CoreCrudClient(post_request_model=search_post_model),
-    items_get_request_model=items_get_model,
-    search_get_request_model=search_get_model,
-    search_post_request_model=search_post_model,
+    extensions=application_extensions,
+    client=CoreCrudClient(pgstac_search_model=post_request_model),
+    items_get_request_model=items_get_request_model,
+    search_get_request_model=get_request_model,
+    search_post_request_model=post_request_model,
+    collections_get_request_model=collections_get_request_model,
     response_class=ORJSONResponse,
     middlewares=middlewares,
 )

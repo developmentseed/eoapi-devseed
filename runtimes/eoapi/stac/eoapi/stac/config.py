@@ -52,7 +52,10 @@ class ApiSettings(BaseSettings):
         "fields",
         "pagination",
         "titiler",
+        "free_text",
         "transaction",
+        # "bulk_transactions",
+        "collection_search",
     ]
 
     @field_validator("cors_origins")

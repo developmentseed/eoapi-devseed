@@ -121,6 +121,7 @@ class eoAPIStack(Stack):
             custom_resource_properties={
                 "context": True,
                 "mosaic_index": True,
+                "pgstac_version": "0.9.2",
             },
         )
 
@@ -187,7 +188,7 @@ class eoAPIStack(Stack):
                 "NAME": app_config.build_service_name("stac"),
                 "description": f"{app_config.stage} STAC API",
                 "TITILER_ENDPOINT": raster.url.strip("/"),
-                "EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler"]',
+                "EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler", "collection_search", "free_text"]',
             },
             db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
