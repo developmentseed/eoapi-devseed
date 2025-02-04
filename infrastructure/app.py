@@ -220,7 +220,7 @@ class eoAPIStack(Stack):
                     "port"
                 ).to_string(),
                 "EOAPI_STAC_TITILER_ENDPOINT": raster.url.strip("/"),
-                "EOAPI_STAC_EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler"]',
+                "EOAPI_STAC_EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler", "collection_search", "free_text"]',
             },
             db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
