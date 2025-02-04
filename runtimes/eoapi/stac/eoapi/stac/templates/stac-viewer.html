@@ -351,7 +351,6 @@ const zoomtofeature = (id) => {
 }
 
 const query = (body) => {
-  console.log(body)
   return fetch('{{ endpoint }}/search', {
     method: 'POST',
     body: JSON.stringify(body),
