@@ -86,12 +86,12 @@ jobs:
           aws-region: us-west-2
 
       - name: Set up node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v5
 
       - name: Install dependencies
         run: |
@@ -99,8 +99,8 @@ jobs:
           uv run --only-group deploy npm install
 
       - name: CDK Synth
-        run: uv run --only-group deploy npm run cdk -- synth
+        run: uv run --only-group deploy npx cdk synth --all
       
       - name: CDK Deploy
         run: |
-          uv run --only-group deploy npm run cdk -- deploy --require-approval never
+          uv run --only-group deploy npx cdk deploy --all --require-approval never

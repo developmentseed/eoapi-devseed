@@ -22,6 +22,7 @@ dynamic = ["version"]
 dependencies = [
     "tipg==0.9.0",
     "eoapi.auth-utils>=0.2.0",
+    "boto3"
 ]
 
 [project.optional-dependencies]

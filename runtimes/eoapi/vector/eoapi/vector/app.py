@@ -15,7 +15,6 @@ from tipg.database import close_db_connection, connect_to_db
 from tipg.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from tipg.factory import Endpoints as TiPgEndpoints
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
-from tipg.settings import PostgresSettings
 
 from . import __version__ as eoapi_vector_version
 from .config import ApiSettings
@@ -24,7 +23,7 @@ from .logs import init_logging
 CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
 settings = ApiSettings()
-postgres_settings = PostgresSettings()
+postgres_settings = settings.load_postgres_settings()
 auth_settings = OpenIdConnectSettings()
 
 # Logs
