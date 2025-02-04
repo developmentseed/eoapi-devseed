@@ -32,7 +32,6 @@ from stac_fastapi.extensions.core.free_text import FreeTextConformanceClasses
 from stac_fastapi.extensions.core.query import QueryConformanceClasses
 from stac_fastapi.extensions.core.sort import SortConformanceClasses
 from stac_fastapi.extensions.third_party import BulkTransactionExtension
-from stac_fastapi.pgstac.config import Settings
 from stac_fastapi.pgstac.core import CoreCrudClient
 from stac_fastapi.pgstac.db import close_db_connection, connect_to_db
 from stac_fastapi.pgstac.extensions import QueryExtension
@@ -61,7 +60,7 @@ templates = Jinja2Templates(env=jinja2_env)
 
 api_settings = ApiSettings()
 auth_settings = OpenIdConnectSettings()
-settings = Settings(enable_response_models=True)
+settings = api_settings.load_postgres_settings()
 
 enabled_extensions = api_settings.extensions or []
 

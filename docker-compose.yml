@@ -35,11 +35,11 @@ services:
       - POSTGRES_PORT=5432
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=1
-      # - EOAPI_STAC_TITILER_ENDPOINT=raster
-      - EOAPI_STAC_TITILER_ENDPOINT=http://127.0.0.1:8082
+      # - TITILER_ENDPOINT=raster
+      - TITILER_ENDPOINT=http://127.0.0.1:8082
       # PgSTAC extensions
-      # - EOAPI_STAC_EXTENSIONS=["filter", "query", "sort", "fields", "pagination", "titiler", "transaction"]  # defaults
-      # - EOAPI_STAC_CORS_METHODS='GET,POST,PUT,OPTIONS'
+      # - EXTENSIONS=["filter", "query", "sort", "fields", "pagination", "titiler", "transaction"]  # defaults
+      # - CORS_METHODS='GET,POST,PUT,OPTIONS'
     env_file:
       - path: .env
         required: false
@@ -123,7 +123,7 @@ services:
       - POSTGRES_PORT=5432
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=10
-      - EOAPI_VECTOR_DEBUG=TRUE
+      - DEBUG=TRUE
     env_file:
       - path: .env
         required: false
