@@ -121,8 +121,8 @@ class eoAPIStack(Stack):
             custom_resource_properties={
                 "context": True,
                 "mosaic_index": True,
-                "pgstac_version": "0.9.2",
             },
+            pgstac_version="0.9.2",
         )
 
         # allow connections from any ipv4 to pgbouncer instance security group
