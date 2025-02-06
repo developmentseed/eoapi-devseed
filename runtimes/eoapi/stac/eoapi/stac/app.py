@@ -32,7 +32,6 @@ from stac_fastapi.extensions.core.free_text import FreeTextConformanceClasses
 from stac_fastapi.extensions.core.query import QueryConformanceClasses
 from stac_fastapi.extensions.core.sort import SortConformanceClasses
 from stac_fastapi.extensions.third_party import BulkTransactionExtension
-from stac_fastapi.pgstac.core import CoreCrudClient
 from stac_fastapi.pgstac.db import close_db_connection, connect_to_db
 from stac_fastapi.pgstac.extensions import QueryExtension
 from stac_fastapi.pgstac.extensions.filter import FiltersClient
@@ -45,6 +44,7 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
+from .client import PgSTACClient
 from .config import ApiSettings
 from .extension import TiTilerExtension
 from .logs import init_logging
@@ -206,7 +206,7 @@ api = StacApi(
     description=api_settings.name,
     settings=settings,
     extensions=application_extensions,
-    client=CoreCrudClient(pgstac_search_model=post_request_model),
+    client=PgSTACClient(pgstac_search_model=post_request_model),
     items_get_request_model=items_get_request_model,
     search_get_request_model=get_request_model,
     search_post_request_model=post_request_model,
