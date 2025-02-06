@@ -36,7 +36,7 @@ class Settings(config.Settings):
     """Extent stac-fastapi-pgstac settings"""
 
     stac_fastapi_title: str = "eoAPI-stac"
-    stac_fastapi_description: str = "Custom stac-fastapi application for eoAPI Devseed"
+    stac_fastapi_description: str = "Custom stac-fastapi application for eoAPI-Devseed"
     stac_fastapi_version: str = "0.1.0"
     stac_fastapi_landing_id: str = "eoapi-devseed-stac"
 

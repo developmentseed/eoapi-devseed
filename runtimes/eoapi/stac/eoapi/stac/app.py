@@ -164,7 +164,10 @@ api = StacApi(
     ),
     settings=settings,
     extensions=application_extensions,
-    client=PgSTACClient(
+    client=PgSTACClient(  # type: ignore
+        landing_page_id=settings.stac_fastapi_landing_id,
+        title=settings.stac_fastapi_title,
+        description=settings.stac_fastapi_description,
         pgstac_search_model=search_post_model,
     ),
     items_get_request_model=items_get_model,
