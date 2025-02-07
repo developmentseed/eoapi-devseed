@@ -13,6 +13,9 @@ on:
       - '.github/workflows/ci.yml'
       - '.pre-commit-config.yaml'
   pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
 
 jobs:
   tests:
@@ -21,16 +24,11 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
+      - uses: astral-sh/setup-uv@v5
+      - name: Install
+        run: uv sync
       - name: Run pre-commit
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install pre-commit
-          pre-commit run --all-files
+        run: uv run pre-commit run --all-files
 
       - name: Launch services
         run: docker compose up -d
@@ -38,15 +36,11 @@ jobs:
       - name: install lib postgres
         uses: nyurik/action-setup-postgis@v2
 
-      - name: Install python dependencies
-        run: |
-          python -m pip install pytest httpx pypgstac==0.9.2 psycopg[pool]
-
       - name: Ingest Stac Items/Collection
         run: |
-          pypgstac pgready --dsn postgresql://username:password@0.0.0.0:5439/postgis
-          pypgstac load collections .github/workflows/data/noaa-emergency-response.json --dsn postgresql://username:password@0.0.0.0:5439/postgis --method insert_ignore
-          pypgstac load items .github/workflows/data/noaa-eri-nashville2020.json --dsn postgresql://username:password@0.0.0.0:5439/postgis --method insert_ignore
+          uv run pypgstac pgready --dsn postgresql://username:password@0.0.0.0:5439/postgis
+          uv run pypgstac load collections .github/workflows/data/noaa-emergency-response.json --dsn postgresql://username:password@0.0.0.0:5439/postgis --method insert_ignore
+          uv run pypgstac load items .github/workflows/data/noaa-eri-nashville2020.json --dsn postgresql://username:password@0.0.0.0:5439/postgis --method insert_ignore
           psql postgresql://username:password@0.0.0.0:5439/postgis -f .github/workflows/data/my_data.sql
 
       # see https://github.com/developmentseed/tipg/issues/37
@@ -59,7 +53,54 @@ jobs:
         shell: bash
 
       - name: Integrations tests
-        run: python -m pytest .github/workflows/tests/
+        run: uv run pytest .github/workflows/tests/
 
       - name: Stop services
         run: docker compose stop
+  
+  deploy:
+    name: Deploy
+    environment: dev
+    needs: [tests]
+    permissions:
+      id-token: write
+      contents: read
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    env:
+      STACK_NAME: eoapi-dev
+  
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Create config file
+        run: |
+          echo "${{ vars.CONFIG_YAML }}" > config.yaml
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::390960605471:role/eoapi-devseed 
+          role-session-name: eoapi-devseed
+          aws-region: us-west-2
+
+      - name: Set up node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: |
+          uv sync --only-group deploy
+          uv run --only-group deploy npm install
+
+      - name: CDK Synth
+        run: uv run --only-group deploy npx cdk synth --all
+      
+      - name: CDK Deploy
+        run: |
+          uv run --only-group deploy npx cdk deploy --all --require-approval never

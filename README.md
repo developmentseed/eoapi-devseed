@@ -64,9 +64,9 @@ Once the applications are *up*, you'll need to add STAC **Collections** and **It
 
 Then you can start exploring your dataset with:
 
-  - the STAC Metadata service [http://localhost:8081](http://localhost:8081)
-  - the Raster service [http://localhost:8082](http://localhost:8082)
-  - the browser UI [http://localhost:8085](http://localhost:8085)
+- the STAC Metadata service [http://localhost:8081](http://localhost:8081)
+- the Raster service [http://localhost:8082](http://localhost:8082)
+- the browser UI [http://localhost:8085](http://localhost:8085)
 
 If you've added a vector dataset to the `public` schema in the Postgres database, they will be available through the **Vector** service at [http://localhost:8083](http://localhost:8083).
 
@@ -85,31 +85,32 @@ If you've added a vector dataset to the `public` schema in the Postgres database
 Install python dependencies with
 
 ```
-python -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
+uv sync --group deploy
 ```
+
+> [!NOTE]
+> [install `uv`](https://docs.astral.sh/uv/getting-started/installation/#installing-uv)
 
 And node dependencies with
 
 ```
-npm install
+uv run npm install
 ```
 
 Verify that the `cdk` CLI is available. Since `aws-cdk` is installed as a local dependency, you can use the `npx` node package runner tool, that comes with `npm`.
 
 ```
-npx cdk --version
+uv run npx cdk --version
 ```
 
 First, synthesize the app
 
 ```
-npx cdk synth --all
+uv run npx cdk synth --all
 ```
 
 Then, deploy
 
 ```
-npx cdk deploy --all --require-approval never
+uv run npx cdk deploy --all --require-approval never
 ```

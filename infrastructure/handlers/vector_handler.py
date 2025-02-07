@@ -5,15 +5,15 @@ import logging
 import os
 
 from eoapi.vector.app import app
+from eoapi.vector.config import ApiSettings
 from mangum import Mangum
 from tipg.collections import register_collection_catalog
 from tipg.database import connect_to_db
-from tipg.settings import PostgresSettings
 
 logging.getLogger("mangum.lifespan").setLevel(logging.ERROR)
 logging.getLogger("mangum.http").setLevel(logging.ERROR)
 
-postgres_settings = PostgresSettings()
+settings = ApiSettings()
 
 try:
     from importlib.resources import files as resources_files  # type: ignore
@@ -31,7 +31,7 @@ async def startup_event() -> None:
     """Connect to database on startup."""
     await connect_to_db(
         app,
-        settings=postgres_settings,
+        settings=settings.load_postgres_settings(),
         # We enable both pgstac and public schemas (pgstac will be used by custom functions)
         schemas=["pgstac", "public"],
         user_sql_files=sql_files,

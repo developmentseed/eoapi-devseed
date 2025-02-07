@@ -369,7 +369,7 @@ const query = (body) => {
         return e;
       })
 
-      if (data.context.matched === 0) {
+      if (data.numberMatched === 0) {
         throw Error("No item found")
       }
 
