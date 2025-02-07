@@ -40,6 +40,7 @@ from starlette.responses import HTMLResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
+from . import __version__ as eoapi_devseed_version
 from .client import PgSTACClient
 from .config import Settings
 from .extension import TiTilerExtension
@@ -153,6 +154,7 @@ api = StacApi(
     app=FastAPI(
         title=settings.stac_fastapi_title,
         description=settings.stac_fastapi_description,
+        version=eoapi_devseed_version,
         lifespan=lifespan,
         openapi_url=settings.openapi_url,
         docs_url=settings.docs_url,
@@ -162,6 +164,7 @@ api = StacApi(
             "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
         },
     ),
+    api_version=eoapi_devseed_version,
     settings=settings,
     extensions=application_extensions,
     client=PgSTACClient(  # type: ignore
