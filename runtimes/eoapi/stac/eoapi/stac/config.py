@@ -2,12 +2,11 @@
 
 import base64
 import json
-from typing import List, Optional
+from typing import Any, Optional
 
 import boto3
-from pydantic import field_validator
-from pydantic_settings import BaseSettings
-from stac_fastapi.pgstac.config import Settings
+from pydantic import model_validator
+from stac_fastapi.pgstac import config
 
 
 def get_secret_dict(secret_name: str):
@@ -33,59 +32,34 @@ def get_secret_dict(secret_name: str):
         return json.loads(base64.b64decode(get_secret_value_response["SecretBinary"]))
 
 
-class ApiSettings(BaseSettings):
-    """API settings"""
+class Settings(config.Settings):
+    """Extent stac-fastapi-pgstac settings"""
 
-    name: str = "eoAPI-stac"
-    cors_origins: str = "*"
-    cors_methods: str = "GET,POST,OPTIONS"
+    stac_fastapi_title: str = "eoAPI-stac"
+    stac_fastapi_description: str = "Custom stac-fastapi application for eoAPI-Devseed"
+    stac_fastapi_landing_id: str = "eoapi-devseed-stac"
+
     cachecontrol: str = "public, max-age=3600"
-    debug: bool = False
 
     pgstac_secret_arn: Optional[str] = None
+
     titiler_endpoint: Optional[str] = None
 
-    extensions: List[str] = [
-        "filter",
-        "query",
-        "sort",
-        "fields",
-        "pagination",
-        "titiler",
-        "free_text",
-        "transaction",
-        # "bulk_transactions",
-        "collection_search",
-    ]
+    debug: bool = False
 
-    @field_validator("cors_origins")
-    def parse_cors_origin(cls, v):
-        """Parse CORS origins."""
-        return [origin.strip() for origin in v.split(",")]
-
-    @field_validator("cors_methods")
-    def parse_cors_methods(cls, v):
-        """Parse CORS methods."""
-        return [method.strip() for method in v.split(",")]
-
-    def load_postgres_settings(self) -> "Settings":
-        """Load postgres connection params from AWS secret"""
-
-        if self.pgstac_secret_arn:
-            secret = get_secret_dict(self.pgstac_secret_arn)
-
-            return Settings(
-                postgres_host_reader=secret["host"],
-                postgres_host_writer=secret["host"],
-                postgres_dbname=secret["dbname"],
-                postgres_user=secret["username"],
-                postgres_pass=secret["password"],
-                postgres_port=secret["port"],
+    @model_validator(mode="before")
+    def get_postgres_setting(cls, data: Any) -> Any:
+        if arn := data.get("pgstac_secret_arn"):
+            secret = get_secret_dict(arn)
+            data.update(
+                {
+                    "postgres_host_reader": secret["host"],
+                    "postgres_host_writer": secret["host"],
+                    "postgres_dbname": secret["dbname"],
+                    "postgres_user": secret["username"],
+                    "postgres_pass": secret["password"],
+                    "postgres_port": secret["port"],
+                }
             )
-        else:
-            return Settings()
 
-    model_config = {
-        "env_file": ".env",
-        "extra": "allow",
-    }
+        return data
