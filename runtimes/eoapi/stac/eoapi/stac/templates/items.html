@@ -29,12 +29,11 @@
 <p>
   <b>Number of matching items:</b> {{ response.numberMatched }}<br/>
   <b>Number of returned items:</b> {{ response.numberReturned }}<br/>
-  <b>Page:</b> <span id="current_page"></span> of <span id="total_pages"></span><br/>
 </p>
 
 <div class="form-row" style="margin-bottom:10px;" id="controls">
   {% for link in response.links %}
-    {% if link.rel == 'prev' %}
+    {% if link.rel == 'previous' %}
       <div class="col-auto"><a class="btn btn-secondary" title="previous page" href="{{ link.href }}">prev</a></div>
     {% endif %}
   {% endfor %}
@@ -120,26 +119,6 @@ $(function() {
   } else {
     document.getElementById("map").style.display = "none";
   }
-
-  //
-  // paging
-  //
-  var offset = 0; // defaults
-  var limit = 10;
-
-  {% if "offset" in template.params %}
-  offset = {{ template.params.offset }};
-  {% endif %}
-  {% if "limit" in template.params %}
-  limit = {{ template.params.limit }};
-  {% endif %}
-
-  var matched = (geojson.numberMatched) ? geojson.numberMatched : 10;
-
-  var current_page = (offset + limit)/limit;
-  $("#current_page").html(current_page);
-  var total_pages = Math.ceil(matched/ limit);
-  $("#total_pages").html(total_pages);
 
   //
   // event handling

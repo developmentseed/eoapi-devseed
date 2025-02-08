@@ -1,12 +1,17 @@
 """TiTiler extension."""
 
-from typing import Optional
+from typing import Annotated, Literal, Optional
 from urllib.parse import urlencode
 
 import attr
 from fastapi import APIRouter, FastAPI, HTTPException, Path, Query
 from fastapi.responses import RedirectResponse
+from stac_fastapi.api.models import CollectionUri
+from stac_fastapi.api.routes import create_async_endpoint
+from stac_fastapi.extensions import core
 from stac_fastapi.types.extension import ApiExtension
+from stac_fastapi.types.search import APIRequest
+from stac_pydantic.shared import MimeTypes
 from starlette.requests import Request
 
 
@@ -104,3 +109,126 @@ class TiTilerExtension(ApiExtension):
             return RedirectResponse(url)
 
         app.include_router(self.router, tags=["TiTiler Extension"])
+
+
+@attr.s
+class HTMLorJSONGetRequest(APIRequest):
+    """HTML or JSON output."""
+
+    f: Annotated[
+        Optional[Literal["json", "html"]],
+        Query(description="Response MediaType."),
+    ] = attr.ib(default=None)
+
+
+@attr.s
+class HTMLorGeoGetRequest(APIRequest):
+    """HTML or GeoJSON output."""
+
+    f: Annotated[
+        Optional[Literal["geojson", "html"]],
+        Query(description="Response MediaType."),
+    ] = attr.ib(default=None)
+
+
+@attr.s(kw_only=True)
+class HTMLorJSONOutputExtension(ApiExtension):
+    """TiTiler extension."""
+
+    GET = HTMLorJSONGetRequest
+    POST = None
+
+    def register(self, app: FastAPI) -> None:
+        pass
+
+
+@attr.s(kw_only=True)
+class HTMLorGeoOutputExtension(ApiExtension):
+    """TiTiler extension."""
+
+    GET = HTMLorGeoGetRequest
+    POST = None
+
+    def register(self, app: FastAPI) -> None:
+        pass
+
+
+@attr.s(kw_only=True)
+class HTMLorSchemaGetRequest(APIRequest):
+    f: Annotated[
+        Optional[Literal["jsonschema", "html"]],
+        Query(description="Response MediaType."),
+    ] = attr.ib(default=None)
+
+
+@attr.s(kw_only=True)
+class CollectionFilterGetRequestModel(CollectionUri, HTMLorSchemaGetRequest):
+    pass
+
+
+@attr.s
+class SearchFilterExtension(core.SearchFilterExtension):
+    """Item Search Filter Extension."""
+
+    def register(self, app: FastAPI) -> None:
+        """Register the extension with a FastAPI application.
+
+        Args:
+            app: target FastAPI application.
+
+        Returns:
+            None
+        """
+        self.router.prefix = app.state.router_prefix
+        self.router.add_api_route(
+            name="Queryables",
+            path="/queryables",
+            methods=["GET"],
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.jsonschema.value: {},
+                        MimeTypes.html.value: {},
+                    },
+                },
+            },
+            response_class=self.response_class,
+            endpoint=create_async_endpoint(
+                self.client.get_queryables, HTMLorSchemaGetRequest
+            ),
+        )
+        app.include_router(self.router, tags=["Filter Extension"])
+
+
+@attr.s
+class ItemCollectionFilterExtension(core.ItemCollectionFilterExtension):
+    """Item Collection Filter Extension."""
+
+    def register(self, app: FastAPI) -> None:
+        """Register the extension with a FastAPI application.
+
+        Args:
+            app: target FastAPI application.
+
+        Returns:
+            None
+        """
+        self.router.prefix = app.state.router_prefix
+        self.router.add_api_route(
+            name="Collection Queryables",
+            path="/collections/{collection_id}/queryables",
+            methods=["GET"],
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.jsonschema.value: {},
+                        MimeTypes.html.value: {},
+                    },
+                },
+            },
+            response_class=self.response_class,
+            endpoint=create_async_endpoint(
+                self.client.get_queryables, CollectionFilterGetRequestModel
+            ),
+        )
+        app.include_router(self.router, tags=["Filter Extension"])

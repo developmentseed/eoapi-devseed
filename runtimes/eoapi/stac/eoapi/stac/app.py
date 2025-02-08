@@ -7,9 +7,10 @@ import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
-from stac_fastapi.api.app import StacApi
 from stac_fastapi.api.models import (
+    CollectionUri,
     ItemCollectionUri,
+    ItemUri,
     create_get_request_model,
     create_post_request_model,
     create_request_model,
@@ -19,9 +20,7 @@ from stac_fastapi.extensions.core import (
     CollectionSearchFilterExtension,
     FieldsExtension,
     FreeTextExtension,
-    ItemCollectionFilterExtension,
     OffsetPaginationExtension,
-    SearchFilterExtension,
     SortExtension,
     TokenPaginationExtension,
 )
@@ -31,7 +30,6 @@ from stac_fastapi.extensions.core.query import QueryConformanceClasses
 from stac_fastapi.extensions.core.sort import SortConformanceClasses
 from stac_fastapi.pgstac.db import close_db_connection, connect_to_db
 from stac_fastapi.pgstac.extensions import QueryExtension
-from stac_fastapi.pgstac.extensions.filter import FiltersClient
 from stac_fastapi.pgstac.types.search import PgstacSearch
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -41,9 +39,16 @@ from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 
 from . import __version__ as eoapi_devseed_version
-from .client import PgSTACClient
+from .api import StacApi
+from .client import FiltersClient, PgSTACClient
 from .config import Settings
-from .extension import TiTilerExtension
+from .extensions import (
+    HTMLorGeoOutputExtension,
+    HTMLorJSONOutputExtension,
+    ItemCollectionFilterExtension,
+    SearchFilterExtension,
+    TiTilerExtension,
+)
 from .logs import init_logging
 
 jinja2_env = jinja2.Environment(
@@ -77,8 +82,9 @@ search_extensions = [
     QueryExtension(),
     SortExtension(),
     FieldsExtension(),
-    SearchFilterExtension(client=FiltersClient()),
+    SearchFilterExtension(client=FiltersClient()),  # type: ignore
     TokenPaginationExtension(),
+    HTMLorGeoOutputExtension(),
 ]
 
 # collection_search extensions
@@ -91,6 +97,7 @@ cs_extensions = [
         conformance_classes=[FreeTextConformanceClasses.COLLECTIONS],
     ),
     OffsetPaginationExtension(),
+    HTMLorJSONOutputExtension(),
 ]
 
 # item_collection extensions
@@ -102,8 +109,9 @@ itm_col_extensions = [
         conformance_classes=[SortConformanceClasses.ITEMS],
     ),
     FieldsExtension(conformance_classes=[FieldsConformanceClasses.ITEMS]),
-    ItemCollectionFilterExtension(client=FiltersClient()),
+    ItemCollectionFilterExtension(client=FiltersClient()),  # type: ignore
     TokenPaginationExtension(),
+    HTMLorGeoOutputExtension(),
 ]
 
 # Request Models
@@ -127,6 +135,22 @@ application_extensions.extend(itm_col_extensions)
 collection_search_extension = CollectionSearchExtension.from_extensions(cs_extensions)
 collections_get_model = collection_search_extension.GET
 application_extensions.append(collection_search_extension)
+
+# /collections/{collectionId} model
+collection_get_model = create_request_model(
+    model_name="CollectionUri",
+    base_model=CollectionUri,
+    extensions=[HTMLorJSONOutputExtension()],
+    request_type="GET",
+)
+
+# /collections/{collectionId}/items/itemId model
+item_get_model = create_request_model(
+    model_name="ItemUri",
+    base_model=ItemUri,
+    extensions=[HTMLorGeoOutputExtension()],
+    request_type="GET",
+)
 
 
 @asynccontextmanager
@@ -173,10 +197,12 @@ api = StacApi(
         description=settings.stac_fastapi_description,
         pgstac_search_model=search_post_model,
     ),
+    item_get_request_model=item_get_model,
     items_get_request_model=items_get_model,
+    collection_get_request_model=collection_get_model,
+    collections_get_request_model=collections_get_model,
     search_get_request_model=search_get_model,
     search_post_request_model=search_post_model,
-    collections_get_request_model=collections_get_model,
     response_class=ORJSONResponse,
     middlewares=middlewares,
 )
