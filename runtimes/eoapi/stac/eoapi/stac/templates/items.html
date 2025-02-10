@@ -78,7 +78,7 @@
 <script>
 
 
-var currentURL = "{{ template.api_root }}/collections/{{ response.features[0].collection }}/items"
+
 function changePageSize() {
   var url = "{{ template.api_root }}/collections/{{ response.features[0].collection }}/items?";
   const searchParams = new URLSearchParams(window.location.search);
@@ -105,7 +105,7 @@ $(function() {
 
     function addPopup(feature, layer) {
       var aElm = document.createElement('a');
-      aElm.setAttribute('href', `${currentURL}/${feature.id}`);
+      aElm.setAttribute('href', `{{ template.api_root }}/collections/${feature.collection}/items/${feature.id}`);
       aElm.setAttribute('target', '_blank');
       aElm.innerText = feature.id;
       layer.bindPopup(aElm);
