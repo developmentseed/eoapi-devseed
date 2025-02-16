@@ -58,15 +58,15 @@
   <thead class="thead-light">
     <th>ID</th>
 {% for key, value in response.features.0.properties.items() %}
-    <th>{{ key }}</th>
+    <th style="font-size: 13px">{{ key }}</th>
 {% endfor %}
   </thead>
   <tbody>
 {% for feature in response.features %}
-    <tr>
+    <tr style="font-size: 11px">
       <td><a target="_blank" href="{{ template.api_root }}/collections/{{ feature.collection }}/items/{{ feature.id }}">{{ feature.id }}</a></td>
   {% for key, value in feature.properties.items() %}
-      <td>{{ value }}</td>
+      <td style="overflow: hidden; text-overflow: ellipsis; max-width: 200px; white-space: nowrap;">{{ value }}</td>
   {% endfor %}
     </tr>
 {% endfor %}
