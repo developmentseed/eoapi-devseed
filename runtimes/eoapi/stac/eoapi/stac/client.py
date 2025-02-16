@@ -494,7 +494,7 @@ class PgSTACClient(CoreCrudClient):
         if next_link or prev_link:
             additional_headers["Link"] = ",".join(
                 [
-                    f'{link["href"]}; rel="{link["rel"]}"'
+                    f'<{link["href"]}>; rel="{link["rel"]}"'
                     for link in [next_link, prev_link]
                     if link
                 ]
@@ -638,7 +638,7 @@ class PgSTACClient(CoreCrudClient):
         if next_link or prev_link:
             additional_headers["Link"] = ",".join(
                 [
-                    f'{link["href"]}; rel="{link["rel"]}"'
+                    f'<{link["href"]}>; rel="{link["rel"]}"'
                     for link in [next_link, prev_link]
                     if link
                 ]
