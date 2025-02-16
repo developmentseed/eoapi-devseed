@@ -43,6 +43,7 @@ from .api import StacApi
 from .client import FiltersClient, PgSTACClient
 from .config import Settings
 from .extensions import (
+    HTMLorGeoMultiOutputExtension,
     HTMLorGeoOutputExtension,
     HTMLorJSONOutputExtension,
     ItemCollectionFilterExtension,
@@ -84,7 +85,7 @@ search_extensions = [
     FieldsExtension(),
     SearchFilterExtension(client=FiltersClient()),  # type: ignore
     TokenPaginationExtension(),
-    HTMLorGeoOutputExtension(),
+    HTMLorGeoMultiOutputExtension(),
 ]
 
 # collection_search extensions
@@ -111,7 +112,7 @@ itm_col_extensions = [
     FieldsExtension(conformance_classes=[FieldsConformanceClasses.ITEMS]),
     ItemCollectionFilterExtension(client=FiltersClient()),  # type: ignore
     TokenPaginationExtension(),
-    HTMLorGeoOutputExtension(),
+    HTMLorGeoMultiOutputExtension(),
 ]
 
 # Request Models

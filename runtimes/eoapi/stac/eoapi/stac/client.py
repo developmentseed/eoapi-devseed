@@ -1,15 +1,31 @@
 """eoapi-devseed: Custom pgstac client."""
 
+import csv
 import re
-from typing import Any, Dict, List, Literal, Optional, Type, get_args
-from urllib.parse import urljoin
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Literal,
+    Optional,
+    Type,
+    get_args,
+)
+from urllib.parse import unquote_plus, urljoin
 
 import attr
 import jinja2
+import orjson
 from fastapi import Request
+from geojson_pydantic.geometries import parse_geometry_obj
+from stac_fastapi.api.models import JSONResponse
 from stac_fastapi.pgstac.core import CoreCrudClient
 from stac_fastapi.pgstac.extensions.filter import FiltersClient as PgSTACFiltersClient
+from stac_fastapi.pgstac.models.links import ItemCollectionLinks
 from stac_fastapi.pgstac.types.search import PgstacSearch
+from stac_fastapi.types.errors import NotFoundError
 from stac_fastapi.types.requests import get_base_url
 from stac_fastapi.types.stac import (
     Collection,
@@ -20,12 +36,15 @@ from stac_fastapi.types.stac import (
     LandingPage,
 )
 from stac_pydantic.links import Relations
-from stac_pydantic.shared import MimeTypes
+from stac_pydantic.shared import BBox, MimeTypes
+from starlette.responses import StreamingResponse
 from starlette.templating import Jinja2Templates, _TemplateResponse
 
 ResponseType = Literal["json", "html"]
 GeoResponseType = Literal["geojson", "html"]
 QueryablesResponseType = Literal["jsonschema", "html"]
+GeoMultiResponseType = Literal["geojson", "html", "geojsonseq", "csv"]
+PostMultiResponseType = Literal["geojson", "geojsonseq", "csv"]
 
 
 jinja2_env = jinja2.Environment(
@@ -134,6 +153,57 @@ def create_html_response(
             **kwargs,
         },
     )
+
+
+def _create_csv_rows(data: Iterable[Dict]) -> Generator[str, None, None]:
+    """Creates an iterator that returns lines of csv from an iterable of dicts."""
+
+    class DummyWriter:
+        """Dummy writer that implements write for use with csv.writer."""
+
+        def write(self, line: str):
+            """Return line."""
+            return line
+
+    # Get the first row and construct the column names
+    row = next(data)  # type: ignore
+    fieldnames = row.keys()
+    writer = csv.DictWriter(DummyWriter(), fieldnames=fieldnames)
+
+    # Write header
+    yield writer.writerow(dict(zip(fieldnames, fieldnames)))
+
+    # Write first row
+    yield writer.writerow(row)
+
+    # Write all remaining rows
+    for row in data:
+        yield writer.writerow(row)
+
+
+def items_to_csv_rows(items: Iterable[Dict]) -> Generator[str, None, None]:
+    """Creates an iterator that returns lines of csv from an iterable of dicts."""
+    if any(f.get("geometry", None) is not None for f in items):
+        rows = (
+            {
+                "itemId": f.get("id"),
+                "collectionId": f.get("collection"),
+                **f.get("properties", {}),
+                "geometry": parse_geometry_obj(f["geometry"]).wkt,
+            }
+            for f in items
+        )
+    else:
+        rows = (
+            {
+                "itemId": f.get("id"),
+                "collectionId": f.get("collection"),
+                **f.get("properties", {}),
+            }
+            for f in items
+        )
+
+    return _create_csv_rows(rows)
 
 
 @attr.s
@@ -367,43 +437,115 @@ class PgSTACClient(CoreCrudClient):
         self,
         collection_id: str,
         request: Request,
-        *args,
+        bbox: Optional[BBox] = None,
+        datetime: Optional[str] = None,
+        limit: Optional[int] = None,
+        # Extensions
+        query: Optional[str] = None,
+        fields: Optional[List[str]] = None,
+        sortby: Optional[str] = None,
+        filter_expr: Optional[str] = None,
+        filter_lang: Optional[str] = None,
+        token: Optional[str] = None,
         f: Optional[str] = None,
         **kwargs,
     ) -> ItemCollection:
-        items = await super().item_collection(collection_id, request, *args, **kwargs)
-
         output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
-            accepted_media = [MimeTypes[v] for v in get_args(GeoResponseType)]
+            accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
             output_type = accept_media_type(
                 request.headers.get("accept", ""), accepted_media
             )
 
+        # Check if collection exist
+        await self.get_collection(collection_id, request=request)
+
+        base_args = {
+            "collections": [collection_id],
+            "bbox": bbox,
+            "datetime": datetime,
+            "limit": limit,
+            "token": token,
+            "query": orjson.loads(unquote_plus(query)) if query else query,
+        }
+        clean = self._clean_search_args(
+            base_args=base_args,
+            filter_query=filter_expr,
+            filter_lang=filter_lang,
+            fields=fields,
+            sortby=sortby,
+        )
+
+        search_request = self.pgstac_search_model(**clean)
+        item_collection = await self._search_base(search_request, request=request)
+        item_collection["links"] = await ItemCollectionLinks(
+            collection_id=collection_id, request=request
+        ).get_links(extra_links=item_collection["links"])
+
+        # Additional Headers for StreamingResponse
+        additional_headers = {}
+        links = item_collection.get("links", [])
+        next_link = next(filter(lambda link: link["rel"] == "next", links), None)
+        prev_link = next(
+            filter(lambda link: link["rel"] in ["prev", "previous"], links), None
+        )
+        if next_link or prev_link:
+            additional_headers["Link"] = ",".join(
+                [
+                    f'{link["href"]}; rel="{link["rel"]}"'
+                    for link in [next_link, prev_link]
+                    if link
+                ]
+            )
+
         if output_type == MimeTypes.html:
-            items["id"] = collection_id
+            item_collection["id"] = collection_id
             return create_html_response(
                 request,
-                items,
+                item_collection,
                 template_name="items",
                 title=f"{collection_id} items",
             )
 
-        return items
+        elif output_type == MimeTypes.csv:
+            return StreamingResponse(
+                items_to_csv_rows(item_collection["features"]),
+                media_type=MimeTypes.csv,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.csv",
+                    **additional_headers,
+                },
+            )
+
+        elif output_type == MimeTypes.geojsonseq:
+            return StreamingResponse(
+                (orjson.dumps(f) + b"\n" for f in item_collection["features"]),
+                media_type=MimeTypes.geojsonseq,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.geojson",
+                    **additional_headers,
+                },
+            )
+
+        # If we have the `fields` extension enabled
+        # we need to avoid Pydantic validation because the
+        # Items might not be a valid STAC Item objects
+        if fields := getattr(search_request, "fields", None):
+            if fields.include or fields.exclude:
+                return JSONResponse(item_collection)  # type: ignore
+
+        return ItemCollection(**item_collection)
 
     async def get_item(
         self,
         item_id: str,
         collection_id: str,
         request: Request,
-        *args,
         f: Optional[str] = None,
         **kwargs,
     ) -> Item:
-        item = await super().get_item(item_id, collection_id, request, *args, **kwargs)
-
         output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
@@ -413,39 +555,161 @@ class PgSTACClient(CoreCrudClient):
                 request.headers.get("accept", ""), accepted_media
             )
 
+        # Check if collection exist
+        await self.get_collection(collection_id, request=request)
+
+        search_request = self.pgstac_search_model(
+            ids=[item_id], collections=[collection_id], limit=1
+        )
+        item_collection = await self._search_base(search_request, request=request)
+        if not item_collection["features"]:
+            raise NotFoundError(
+                f"Item {item_id} in Collection {collection_id} does not exist."
+            )
+
         if output_type == MimeTypes.html:
             return create_html_response(
                 request,
-                item,
+                item_collection["features"][0],
                 template_name="item",
                 title=f"{collection_id}/{item_id} item",
             )
 
-        return item
+        return Item(**item_collection["features"][0])
 
     async def get_search(
         self,
         request: Request,
-        *args,
+        collections: Optional[List[str]] = None,
+        ids: Optional[List[str]] = None,
+        bbox: Optional[BBox] = None,
+        intersects: Optional[str] = None,
+        datetime: Optional[str] = None,
+        limit: Optional[int] = None,
+        # Extensions
+        query: Optional[str] = None,
+        fields: Optional[List[str]] = None,
+        sortby: Optional[str] = None,
+        filter_expr: Optional[str] = None,
+        filter_lang: Optional[str] = None,
+        token: Optional[str] = None,
         f: Optional[str] = None,
         **kwargs,
     ) -> ItemCollection:
-        items = await super().get_search(request, *args, **kwargs)
-
         output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
-            accepted_media = [MimeTypes[v] for v in get_args(GeoResponseType)]
+            accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
             output_type = accept_media_type(
                 request.headers.get("accept", ""), accepted_media
+            )
+
+        # Parse request parameters
+        base_args = {
+            "collections": collections,
+            "ids": ids,
+            "bbox": bbox,
+            "limit": limit,
+            "token": token,
+            "query": orjson.loads(unquote_plus(query)) if query else query,
+        }
+
+        clean = self._clean_search_args(
+            base_args=base_args,
+            intersects=intersects,
+            datetime=datetime,
+            fields=fields,
+            sortby=sortby,
+            filter_query=filter_expr,
+            filter_lang=filter_lang,
+        )
+
+        search_request = self.pgstac_search_model(**clean)
+        item_collection = await self._search_base(search_request, request=request)
+
+        # Additional Headers for StreamingResponse
+        additional_headers = {}
+        links = item_collection.get("links", [])
+        next_link = next(filter(lambda link: link["rel"] == "next", links), None)
+        prev_link = next(
+            filter(lambda link: link["rel"] in ["prev", "previous"], links), None
+        )
+        if next_link or prev_link:
+            additional_headers["Link"] = ",".join(
+                [
+                    f'{link["href"]}; rel="{link["rel"]}"'
+                    for link in [next_link, prev_link]
+                    if link
+                ]
             )
 
         if output_type == MimeTypes.html:
             return create_html_response(
                 request,
-                items,
+                item_collection,
                 template_name="search",
             )
 
-        return items
+        elif output_type == MimeTypes.csv:
+            return StreamingResponse(
+                items_to_csv_rows(item_collection["features"]),
+                media_type=MimeTypes.csv,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.csv",
+                    **additional_headers,
+                },
+            )
+
+        elif output_type == MimeTypes.geojsonseq:
+            return StreamingResponse(
+                (orjson.dumps(f) + b"\n" for f in item_collection["features"]),
+                media_type=MimeTypes.geojsonseq,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.geojson",
+                    **additional_headers,
+                },
+            )
+
+        if fields := getattr(search_request, "fields", None):
+            if fields.include or fields.exclude:
+                return JSONResponse(item_collection)  # type: ignore
+
+        return ItemCollection(**item_collection)
+
+    async def post_search(
+        self,
+        search_request: PgstacSearch,
+        request: Request,
+        **kwargs,
+    ) -> ItemCollection:
+        accepted_media = [MimeTypes[v] for v in get_args(PostMultiResponseType)]
+        output_type = accept_media_type(
+            request.headers.get("accept", ""), accepted_media
+        )
+
+        item_collection = await self._search_base(search_request, request=request)
+
+        if output_type == MimeTypes.csv:
+            return StreamingResponse(
+                items_to_csv_rows(item_collection["features"]),
+                media_type=MimeTypes.csv,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.csv",
+                },
+            )
+
+        elif output_type == MimeTypes.geojsonseq:
+            return StreamingResponse(
+                (orjson.dumps(f) + b"\n" for f in item_collection["features"]),
+                media_type=MimeTypes.geojsonseq,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.geojson",
+                },
+            )
+
+        if fields := getattr(search_request, "fields", None):
+            if fields.include or fields.exclude:
+                return JSONResponse(item_collection)  # type: ignore
+
+        return ItemCollection(**item_collection)

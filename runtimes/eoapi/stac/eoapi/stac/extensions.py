@@ -131,6 +131,16 @@ class HTMLorGeoGetRequest(APIRequest):
     ] = attr.ib(default=None)
 
 
+@attr.s
+class HTMLorGeoGetRequestMulti(APIRequest):
+    """HTML, GeoJSON, GeoJSONSeq or CSV output."""
+
+    f: Annotated[
+        Optional[Literal["geojson", "html", "csv", "geojsonseq"]],
+        Query(description="Response MediaType."),
+    ] = attr.ib(default=None)
+
+
 @attr.s(kw_only=True)
 class HTMLorJSONOutputExtension(ApiExtension):
     """TiTiler extension."""
@@ -147,6 +157,17 @@ class HTMLorGeoOutputExtension(ApiExtension):
     """TiTiler extension."""
 
     GET = HTMLorGeoGetRequest
+    POST = None
+
+    def register(self, app: FastAPI) -> None:
+        pass
+
+
+@attr.s(kw_only=True)
+class HTMLorGeoMultiOutputExtension(ApiExtension):
+    """TiTiler extension."""
+
+    GET = HTMLorGeoGetRequestMulti
     POST = None
 
     def register(self, app: FastAPI) -> None:

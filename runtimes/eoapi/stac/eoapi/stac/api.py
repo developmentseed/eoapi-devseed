@@ -157,6 +157,8 @@ class StacApi(app.StacApi):
                     "content": {
                         MimeTypes.geojson.value: {},
                         MimeTypes.html.value: {},
+                        MimeTypes.csv.value: {},
+                        MimeTypes.geojsonseq.value: {},
                     },
                     "model": api.ItemCollection,
                 },
@@ -187,6 +189,8 @@ class StacApi(app.StacApi):
                     "content": {
                         MimeTypes.geojson.value: {},
                         MimeTypes.html.value: {},
+                        MimeTypes.csv.value: {},
+                        MimeTypes.geojsonseq.value: {},
                     },
                     "model": api.ItemCollection,
                 },
@@ -197,5 +201,36 @@ class StacApi(app.StacApi):
             methods=["GET"],
             endpoint=create_async_endpoint(
                 self.client.get_search, self.search_get_request_model
+            ),
+        )
+
+    def register_post_search(self):
+        """Register search endpoint (POST /search).
+
+        Returns:
+            None
+        """
+        self.router.add_api_route(
+            name="Search",
+            path="/search",
+            response_model=api.ItemCollection
+            if self.settings.enable_response_models
+            else None,
+            responses={
+                200: {
+                    "content": {
+                        MimeTypes.geojson.value: {},
+                        MimeTypes.csv.value: {},
+                        MimeTypes.geojsonseq.value: {},
+                    },
+                    "model": api.ItemCollection,
+                },
+            },
+            response_class=GeoJSONResponse,
+            response_model_exclude_unset=True,
+            response_model_exclude_none=True,
+            methods=["POST"],
+            endpoint=create_async_endpoint(
+                self.client.post_search, self.search_post_request_model
             ),
         )
