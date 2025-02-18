@@ -690,12 +690,29 @@ class PgSTACClient(CoreCrudClient):
 
         item_collection = await self._search_base(search_request, request=request)
 
+        # Additional Headers for StreamingResponse
+        additional_headers = {}
+        links = item_collection.get("links", [])
+        next_link = next(filter(lambda link: link["rel"] == "next", links), None)
+        prev_link = next(
+            filter(lambda link: link["rel"] in ["prev", "previous"], links), None
+        )
+        if next_link or prev_link:
+            additional_headers["Pagination-Token"] = ",".join(
+                [
+                    f'<{link["body"]["token"]}>; rel="{link["rel"]}"'
+                    for link in [next_link, prev_link]
+                    if link
+                ]
+            )
+
         if output_type == MimeTypes.csv:
             return StreamingResponse(
                 items_to_csv_rows(item_collection["features"]),
                 media_type=MimeTypes.csv,
                 headers={
                     "Content-Disposition": "attachment;filename=items.csv",
+                    **additional_headers,
                 },
             )
 
@@ -705,6 +722,7 @@ class PgSTACClient(CoreCrudClient):
                 media_type=MimeTypes.geojsonseq,
                 headers={
                     "Content-Disposition": "attachment;filename=items.geojson",
+                    **additional_headers,
                 },
             )
 
