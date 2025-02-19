@@ -136,7 +136,7 @@ class HTMLorGeoGetRequestMulti(APIRequest):
     """HTML, GeoJSON, GeoJSONSeq or CSV output."""
 
     f: Annotated[
-        Optional[Literal["geojson", "html", "csv", "geojsonseq"]],
+        Optional[Literal["geojson", "html", "csv", "geojsonseq", "parquet"]],
         Query(description="Response MediaType."),
     ] = attr.ib(default=None)
 
