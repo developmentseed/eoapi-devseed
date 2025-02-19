@@ -209,7 +209,7 @@ def items_to_csv_rows(items: Iterable[Dict]) -> Generator[str, None, None]:
     return _create_csv_rows(rows)
 
 
-def create_parquet(items: Dict) -> bytes:
+async def create_parquet(items: Dict) -> bytes:
     """Create parquet binary body."""
     fp = tempfile.NamedTemporaryFile(suffix=".parquet", delete=False)
     fp.close()
@@ -217,7 +217,7 @@ def create_parquet(items: Dict) -> bytes:
     content = b""
 
     try:
-        stacrs.write(fp.name, items)
+        await stacrs.write(fp.name, items)
         with open(fp.name, "rb") as f:
             content = f.read()
 
@@ -552,7 +552,7 @@ class PgSTACClient(CoreCrudClient):
 
         elif output_type == MimeTypes.parquet:
             return Response(
-                create_parquet(item_collection),
+                await create_parquet(item_collection),
                 media_type=MimeTypes.parquet,
                 headers={
                     "Content-Disposition": "attachment;filename=items.parquet",
@@ -704,7 +704,7 @@ class PgSTACClient(CoreCrudClient):
 
         elif output_type == MimeTypes.parquet:
             return Response(
-                create_parquet(item_collection),
+                await create_parquet(item_collection),
                 media_type=MimeTypes.parquet,
                 headers={
                     "Content-Disposition": "attachment;filename=items.parquet",
@@ -769,7 +769,7 @@ class PgSTACClient(CoreCrudClient):
 
         elif output_type == MimeTypes.parquet:
             return Response(
-                create_parquet(item_collection),
+                await create_parquet(item_collection),
                 media_type=MimeTypes.parquet,
                 headers={
                     "Content-Disposition": "attachment;filename=items.parquet",
