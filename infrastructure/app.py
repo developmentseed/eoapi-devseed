@@ -122,7 +122,7 @@ class eoAPIStack(Stack):
                 "context": True,
                 "mosaic_index": True,
             },
-            pgstac_version="0.9.2",
+            pgstac_version="0.9.3",
         )
 
         # allow connections from any ipv4 to pgbouncer instance security group
