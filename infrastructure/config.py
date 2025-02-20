@@ -116,6 +116,22 @@ class AppConfig(BaseSettings):
         as it will be used as a backend.""",
         default=None,
     )
+    stac_browser_custom_domain: Optional[str] = Field(
+        description="Custom domain name for the STAC Browser site",
+        default=None,
+    )
+    stac_browser_certificate_arn: Optional[str] = Field(
+        description="Arn for the STAC Browser custom domain name (must be in us-east-1)",
+        default=None,
+    )
+    hosted_zone_id: Optional[str] = Field(
+        description="Hosted Zone ID for custom domains",
+        default=None,
+    )
+    hosted_zone_name: Optional[str] = Field(
+        description="Hosted Zone Name for custom domains",
+        default=None,
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env-cdk", yaml_file="config.yaml", extra="allow"
@@ -137,14 +153,14 @@ class AppConfig(BaseSettings):
                              and therefore `nat_gateway_count` has to be > 0."""
             )
 
-        if (
-            self.stac_browser_version is not None
-            and self.stac_api_custom_domain is None
-        ):
-            raise ValueError(
-                """If a STAC browser version is provided,
-                a custom domain must be provided for the STAC API"""
-            )
+        # if (
+        #     self.stac_browser_version is not None
+        #     and self.stac_api_custom_domain is None
+        # ):
+        #     raise ValueError(
+        #         """If a STAC browser version is provided,
+        #         a custom domain must be provided for the STAC API"""
+        #     )
 
         if self.acm_certificate_arn is None and any(
             [

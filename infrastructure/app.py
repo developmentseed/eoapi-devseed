@@ -7,10 +7,14 @@ from aws_cdk import (
     RemovalPolicy,
     Stack,
     aws_certificatemanager,
+    aws_cloudfront,
+    aws_cloudfront_origins,
     aws_ec2,
     aws_iam,
     aws_lambda,
     aws_rds,
+    aws_route53,
+    aws_route53_targets,
     aws_s3,
 )
 from aws_cdk.aws_apigateway import DomainNameOptions
@@ -352,22 +356,80 @@ class eoAPIStack(Stack):
             )
 
         if app_config.stac_browser_version:
+            if not (
+                app_config.hosted_zone_id
+                and app_config.hosted_zone_name
+                and app_config.stac_browser_custom_domain
+                and app_config.stac_browser_certificate_arn
+            ):
+                raise ValueError(
+                    "to deploy STAC browser you must provide config parameters for hosted_zone_id and stac_browser_custom_domain and stac_browser_certificate_arn"
+                )
+
             stac_browser_bucket = aws_s3.Bucket(
                 self,
                 "stac-browser-bucket",
                 bucket_name=app_config.build_service_name("stac-browser"),
                 removal_policy=RemovalPolicy.DESTROY,
                 auto_delete_objects=True,
-                website_index_document="index.html",
-                public_read_access=True,
-                block_public_access=aws_s3.BlockPublicAccess(
-                    block_public_acls=False,
-                    block_public_policy=False,
-                    ignore_public_acls=False,
-                    restrict_public_buckets=False,
-                ),
-                object_ownership=aws_s3.ObjectOwnership.OBJECT_WRITER,
+                block_public_access=aws_s3.BlockPublicAccess.BLOCK_ALL,
+                enforce_ssl=True,
             )
+
+            distribution = aws_cloudfront.Distribution(
+                self,
+                "stac-browser-distribution",
+                default_behavior=aws_cloudfront.BehaviorOptions(
+                    origin=aws_cloudfront_origins.S3Origin(stac_browser_bucket),
+                    viewer_protocol_policy=aws_cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    allowed_methods=aws_cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                    cached_methods=aws_cloudfront.CachedMethods.CACHE_GET_HEAD,
+                ),
+                default_root_object="index.html",
+                error_responses=[
+                    aws_cloudfront.ErrorResponse(
+                        http_status=404,
+                        response_http_status=200,
+                        response_page_path="/index.html",
+                    )
+                ],
+                certificate=aws_certificatemanager.Certificate.from_certificate_arn(
+                    self,
+                    "stac-browser-certificate",
+                    app_config.stac_browser_certificate_arn,
+                ),
+                domain_names=[app_config.stac_browser_custom_domain],
+            )
+
+            account_id = Stack.of(self).account
+            distribution_arn = f"arn:aws:cloudfront::${account_id}:distribution/${distribution.distribution_id}"
+
+            stac_browser_bucket.add_to_resource_policy(
+                aws_iam.PolicyStatement(
+                    actions=["s3:GetObject"],
+                    resources=[stac_browser_bucket.arn_for_objects("*")],
+                    principals=[aws_iam.ServicePrincipal("cloudfront.amazonaws.com")],
+                    conditions={"StringEquals": {"AWS:SourceArn": distribution_arn}},
+                )
+            )
+
+            hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
+                self,
+                "stac-browser-hosted-zone",
+                hosted_zone_id=app_config.hosted_zone_id,
+                zone_name=app_config.hosted_zone_name,
+            )
+
+            aws_route53.ARecord(
+                self,
+                "stac-browser-alias",
+                zone=hosted_zone,
+                target=aws_route53.RecordTarget.from_alias(
+                    aws_route53_targets.CloudFrontTarget(distribution)
+                ),
+                record_name=app_config.stac_browser_custom_domain,
+            )
+
             StacBrowser(
                 self,
                 "stac-browser",
@@ -375,6 +437,9 @@ class eoAPIStack(Stack):
                 stac_catalog_url=f"https://{app_config.stac_api_custom_domain}",
                 website_index_document="index.html",
                 bucket_arn=stac_browser_bucket.bucket_arn,
+                config_file_path=os.path.join(
+                    os.path.abspath(context_dir), "browser_config.js"
+                ),
             )
 
     def _create_data_access_role(self) -> aws_iam.Role:
