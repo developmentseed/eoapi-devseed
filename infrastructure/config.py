@@ -116,6 +116,18 @@ class AppConfig(BaseSettings):
         as it will be used as a backend.""",
         default=None,
     )
+    stac_browser_custom_domain: Optional[str] = Field(
+        description="Custom domain name for the STAC Browser site",
+        default=None,
+    )
+    stac_browser_certificate_arn: Optional[str] = Field(
+        description="Arn for the STAC Browser custom domain name (must be in us-east-1)",
+        default=None,
+    )
+    hosted_zone_id: Optional[str] = Field(
+        description="Hosted Zone ID for custom domains",
+        default=None,
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env-cdk", yaml_file="config.yaml", extra="allow"
