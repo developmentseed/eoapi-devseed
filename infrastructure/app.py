@@ -358,6 +358,7 @@ class eoAPIStack(Stack):
         if app_config.stac_browser_version:
             if not (
                 app_config.hosted_zone_id
+                and app_config.hosted_zone_name
                 and app_config.stac_browser_custom_domain
                 and app_config.stac_browser_certificate_arn
             ):
@@ -412,8 +413,11 @@ class eoAPIStack(Stack):
                 )
             )
 
-            hosted_zone = aws_route53.HostedZone.from_hosted_zone_id(
-                self, "stac-browser-hosted-zone", app_config.hosted_zone_id
+            hosted_zone = aws_route53.HostedZone.from_hosted_zone_attributes(
+                self,
+                "stac-browser-hosted-zone",
+                hosted_zone_id=app_config.hosted_zone_id,
+                zone_name=app_config.hosted_zone_name,
             )
 
             aws_route53.ARecord(
