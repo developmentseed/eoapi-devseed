@@ -170,3 +170,5 @@ node_modules/
 .ruff_cache/
 .env-cdk
 config.yaml
+stac-browser/
+.envrc
