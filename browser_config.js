@@ -1,5 +1,4 @@
 module.exports = {
-  catalogUrl: "https://stac.eoapi.dev",
   catalogTitle: "eoAPI STAC Browser",
   allowExternalAccess: true, // Must be true if catalogUrl is not given
   allowedDomains: [],

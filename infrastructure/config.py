@@ -153,14 +153,14 @@ class AppConfig(BaseSettings):
                              and therefore `nat_gateway_count` has to be > 0."""
             )
 
-        # if (
-        #     self.stac_browser_version is not None
-        #     and self.stac_api_custom_domain is None
-        # ):
-        #     raise ValueError(
-        #         """If a STAC browser version is provided,
-        #         a custom domain must be provided for the STAC API"""
-        #     )
+        if (
+            self.stac_browser_version is not None
+            and self.stac_api_custom_domain is None
+        ):
+            raise ValueError(
+                """If a STAC browser version is provided,
+                a custom domain must be provided for the STAC API"""
+            )
 
         if self.acm_certificate_arn is None and any(
             [
