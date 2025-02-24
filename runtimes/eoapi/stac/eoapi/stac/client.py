@@ -1,7 +1,9 @@
 """eoapi-devseed: Custom pgstac client."""
 
 import csv
+import os
 import re
+import tempfile
 from typing import (
     Any,
     Dict,
@@ -18,6 +20,7 @@ from urllib.parse import unquote_plus, urljoin
 import attr
 import jinja2
 import orjson
+import stacrs
 from fastapi import Request
 from geojson_pydantic.geometries import parse_geometry_obj
 from stac_fastapi.api.models import JSONResponse
@@ -37,14 +40,14 @@ from stac_fastapi.types.stac import (
 )
 from stac_pydantic.links import Relations
 from stac_pydantic.shared import BBox, MimeTypes
-from starlette.responses import StreamingResponse
+from starlette.responses import Response, StreamingResponse
 from starlette.templating import Jinja2Templates, _TemplateResponse
 
 ResponseType = Literal["json", "html"]
 GeoResponseType = Literal["geojson", "html"]
 QueryablesResponseType = Literal["jsonschema", "html"]
-GeoMultiResponseType = Literal["geojson", "html", "geojsonseq", "csv"]
-PostMultiResponseType = Literal["geojson", "geojsonseq", "csv"]
+GeoMultiResponseType = Literal["geojson", "html", "geojsonseq", "csv", "parquet"]
+PostMultiResponseType = Literal["geojson", "geojsonseq", "csv", "parquet"]
 
 
 jinja2_env = jinja2.Environment(
@@ -204,6 +207,24 @@ def items_to_csv_rows(items: Iterable[Dict]) -> Generator[str, None, None]:
         )
 
     return _create_csv_rows(rows)
+
+
+async def create_parquet(items: Dict) -> bytes:
+    """Create parquet binary body."""
+    fp = tempfile.NamedTemporaryFile(suffix=".parquet", delete=False)
+    fp.close()
+
+    content = b""
+
+    try:
+        await stacrs.write(fp.name, items)
+        with open(fp.name, "rb") as f:
+            content = f.read()
+
+    finally:
+        os.remove(fp.name)
+
+    return content
 
 
 @attr.s
@@ -529,6 +550,16 @@ class PgSTACClient(CoreCrudClient):
                 },
             )
 
+        elif output_type == MimeTypes.parquet:
+            return Response(
+                await create_parquet(item_collection),
+                media_type=MimeTypes.parquet,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.parquet",
+                    **additional_headers,
+                },
+            )
+
         # If we have the `fields` extension enabled
         # we need to avoid Pydantic validation because the
         # Items might not be a valid STAC Item objects
@@ -671,6 +702,16 @@ class PgSTACClient(CoreCrudClient):
                 },
             )
 
+        elif output_type == MimeTypes.parquet:
+            return Response(
+                await create_parquet(item_collection),
+                media_type=MimeTypes.parquet,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.parquet",
+                    **additional_headers,
+                },
+            )
+
         if fields := getattr(search_request, "fields", None):
             if fields.include or fields.exclude:
                 return JSONResponse(item_collection)  # type: ignore
@@ -722,6 +763,16 @@ class PgSTACClient(CoreCrudClient):
                 media_type=MimeTypes.geojsonseq,
                 headers={
                     "Content-Disposition": "attachment;filename=items.geojson",
+                    **additional_headers,
+                },
+            )
+
+        elif output_type == MimeTypes.parquet:
+            return Response(
+                await create_parquet(item_collection),
+                media_type=MimeTypes.parquet,
+                headers={
+                    "Content-Disposition": "attachment;filename=items.parquet",
                     **additional_headers,
                 },
             )
