@@ -54,7 +54,7 @@ services:
           path: ./runtimes/eoapi/stac/eoapi
           target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
         - action: rebuild
-          path: ./runtimes/eoapi/stac/pyproject.toml
+          path: ./runtimes/eoapi/stac
     volumes:
       - ./dockerfiles/scripts:/tmp/scripts
 
@@ -103,7 +103,7 @@ services:
           path: ./runtimes/eoapi/raster/eoapi
           target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
         - action: rebuild
-          path: ./runtimes/eoapi/raster/pyproject.toml
+          path: ./runtimes/eoapi/raster
     volumes:
       - ./dockerfiles/scripts:/tmp/scripts
 
@@ -136,7 +136,7 @@ services:
           path: ./runtimes/eoapi/vector/eoapi
           target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
         - action: rebuild
-          path: ./runtimes/eoapi/vector/pyproject.toml
+          path: ./runtimes/eoapi/vector
     depends_on:
       - database
     volumes:

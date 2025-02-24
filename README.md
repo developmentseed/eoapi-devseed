@@ -20,12 +20,41 @@ This repository shows an example of how users can customize and deploy their own
 
 #### eoapi.stac
 
-Built on [stac-fastapi.pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) application, adding a **`TiTilerExtension`** and a simple **`Search Viewer`**.
+Built on [stac-fastapi.pgstac](https://github.com/stac-utils/stac-fastapi-pgstac) application,
 
-When the `EOAPI_STAC_TITILER_ENDPOINT` environment variable is set (pointing to the `raster` application) and `titiler` extension is enabled, additional endpoints will be added to the stac-fastapi application (see: [stac/extension.py](https://github.com/developmentseed/eoapi-devseed/blob/main/runtimes/eoapi/stac/eoapi/stac/extension.py)):
+#### Features
 
-- `/collections/{collectionId}/items/{itemId}/tilejson.json`: Return the `raster` tilejson for an item
-- `/collections/{collectionId}/items/{itemId}/viewer`: Redirect to the `raster` viewer
+- **`TiTilerExtension`**
+
+  When the `EOAPI_STAC_TITILER_ENDPOINT` environment variable is set (pointing to the `raster` application) and `titiler` extension is enabled, additional endpoints will be added to the stac-fastapi application (see: [stac/extension.py](https://github.com/developmentseed/eoapi-devseed/blob/main/runtimes/eoapi/stac/eoapi/stac/extension.py)):
+
+  - `/collections/{collectionId}/items/{itemId}/tilejson.json`: Return the `raster` tilejson for an item
+  - `/collections/{collectionId}/items/{itemId}/viewer`: Redirect to the `raster` viewer
+
+- a simple **`Search Viewer`** (`/index.html`)
+
+<p align="center">
+  <img width="800" alt="stac-search" src="https://github.com/user-attachments/assets/d08b8b3c-ac3f-421c-ba5c-f6a9eae02964">
+</p>
+
+- **HTML** response output
+
+  When receiving `Accept: text/html` headers or `f=html` query parameter the application will return HTML response
+
+<p align="center">
+  <img width="800" alt="stac-search" src="https://github.com/user-attachments/assets/8790182b-ae60-4262-89ae-9dda518b1846">
+</p>
+
+- **GeoJSON-Seq** / **csv** response output
+
+  As for the HTML output, the `/search` and `/items` endpoint can return `new line` delimited GeoJSON or CSV when specifically requested by the user with `Accept: application/geo+json-seq|text/csv`  headers or `f=geojsonseq|csv` query parameter.
+
+  ```
+  curl https://stac.eoapi.dev/search\?limit\=1 --header "Accept: text/csv"
+
+  itemId,collectionId,gsd,quadkey,datetime,...
+  11_031311120101_103001010C12B000,WildFires-LosAngeles-Jan-2025,...
+  ```
 
 #### eoapi.raster
 
@@ -57,7 +86,7 @@ The CDK code is almost similar to the one found in [eoapi-template](https://gith
 Before deploying the application on the cloud, you can start by exploring it with a local *Docker* deployment
 
 ```
-docker compose up
+docker compose up --watch
 ```
 
 Once the applications are *up*, you'll need to add STAC **Collections** and **Items** to the PgSTAC database. If you don't have, you can use the follow the [MAXAR open data demo](https://github.com/vincentsarago/MAXAR_opendata_to_pgstac) (or get inspired by the other [demos](https://github.com/developmentseed/eoAPI/tree/main/demo)).
