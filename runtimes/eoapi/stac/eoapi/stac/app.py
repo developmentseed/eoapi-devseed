@@ -23,13 +23,16 @@ from stac_fastapi.extensions.core import (
     OffsetPaginationExtension,
     SortExtension,
     TokenPaginationExtension,
+    TransactionExtension,
 )
 from stac_fastapi.extensions.core.fields import FieldsConformanceClasses
 from stac_fastapi.extensions.core.free_text import FreeTextConformanceClasses
 from stac_fastapi.extensions.core.query import QueryConformanceClasses
 from stac_fastapi.extensions.core.sort import SortConformanceClasses
+from stac_fastapi.extensions.third_party import BulkTransactionExtension
 from stac_fastapi.pgstac.db import close_db_connection, connect_to_db
 from stac_fastapi.pgstac.extensions import QueryExtension
+from stac_fastapi.pgstac.transactions import BulkTransactionsClient, TransactionsClient
 from stac_fastapi.pgstac.types.search import PgstacSearch
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
@@ -72,6 +75,18 @@ logger = logging.getLogger(__name__)
 # Extensions
 # application extensions
 application_extensions = []
+
+if settings.enable_transaction:
+    application_extensions.append(
+        TransactionExtension(
+            client=TransactionsClient(),
+            settings=settings,
+            response_class=ORJSONResponse,
+        )
+    )
+    application_extensions.append(
+        BulkTransactionExtension(client=BulkTransactionsClient())
+    )
 
 if settings.titiler_endpoint:
     application_extensions.append(

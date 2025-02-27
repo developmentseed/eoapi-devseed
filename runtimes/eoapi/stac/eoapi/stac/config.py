@@ -44,6 +44,7 @@ class Settings(config.Settings):
     pgstac_secret_arn: Optional[str] = None
 
     titiler_endpoint: Optional[str] = None
+    enable_transaction: bool = False
 
     debug: bool = False
 
