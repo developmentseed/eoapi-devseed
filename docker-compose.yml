@@ -37,8 +37,8 @@ services:
       - DB_MAX_CONN_SIZE=1
       # - TITILER_ENDPOINT=raster
       - TITILER_ENDPOINT=http://127.0.0.1:8082
-      # PgSTAC extensions
-      # - EXTENSIONS=["filter", "query", "sort", "fields", "pagination", "titiler", "transaction"]  # defaults
+      # Transtaction Extension
+      # - ENABLE_TRANSACTION=TRUE
       # - CORS_METHODS='GET,POST,PUT,OPTIONS'
     env_file:
       - path: .env
