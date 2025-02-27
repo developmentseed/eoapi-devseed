@@ -17,7 +17,7 @@ class ApiSettings(BaseSettings):
 
     titiler_endpoint: Optional[str] = None
 
-    extensions: List[str] = [
+    extensions: Optional[List[str]] = [
         "filter",
         "query",
         "sort",
