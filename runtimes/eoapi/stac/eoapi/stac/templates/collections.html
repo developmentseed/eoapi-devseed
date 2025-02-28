@@ -1,13 +1,6 @@
-{% include "header.html" %}
+{% extends "base.html" %}
 
-{% set show_prev_link = false %}
-{% set show_next_link = false %}
-{% if params %}
-  {% set urlq = url + '?' + params + '&' %}
-  {% else %}
-  {% set urlq = url + '?' %}
-{% endif %}
-
+{% block content %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-light">
     {% for crumb in crumbs %}
@@ -23,32 +16,41 @@
 
 <h1>Collections</h1>
 
-<p>
-  <b>Number of matching collections:</b> {{ response.numberMatched }}<br/>
-  <b>Number of returned collections:</b> {{ response.numberReturned }}<br/>
-  <b>Page:</b> <span id="current_page"></span> of <span id="total_pages"></span><br/>
-</p>
-
-<div class="form-row" style="margin-bottom:10px;" id="controls">
-  {% for link in response.links %}
-    {% if link.rel == 'prev' %}
-      <div class="col-auto"><a class="btn btn-secondary" title="previous page" href="{{ link.href }}">prev</a></div>
-    {% endif %}
-  {% endfor %}
-  <div class="col-auto">
-    <select class="form-control" id="limit"> <!-- TODO: dynamically populate the values based on oga_max_limit -->
-      <option value="10">page size</option>
-      <option>10</option>
-      <option>100</option>
-      <option>1000</option>
-      <option>10000</option>
-    </select>
+{% if not response.collections %}
+<div class="text-center mx-auto py-5 w-50">
+  <p class="h4 mb-3">No collections found</p>
+  <p>You need to add STAC Collections and Items; for example by following the <a href="https://github.com/vincentsarago/MAXAR_opendata_to_pgstac">MAXAR open data demo</a> or <a href="https://github.com/developmentseed/eoAPI/tree/main/demo">other demos.</a></p>
+</div>
+{% else %}
+<div class="d-flex flex-row align-items-center mb-4">
+  <div class="flex-grow-1">
+    Showing {{ offset + 1 }} - {{ offset + response.numberReturned }} of {{ response.numberMatched }} collections
   </div>
-  {% for link in response.links %}
-    {% if link.rel == 'next' %}
-      <div class="col-auto"><a class="btn btn-secondary" title="next page" href="{{ link.href }}">next</a></div>
+  <div class="form-inline" style="gap: 10px">
+    <div class="d-flex">
+      <label for="limit">Page size: </label>
+      <select class="form-control form-control-sm ml-1" id="limit" aria-label="Select page size"> <!-- TODO: dynamically populate the values based on oga_max_limit -->
+        <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
+        <option value="25" {% if limit == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+      </select>
+    </div>
+    {% if response.links|length > 0 %}
+    <div class="btn-group btn-group-sm" role="group" aria-label="Paginate">
+      {% for link in response.links %}
+      {% if link.rel == 'prev' or link.rel == 'previous' %}
+        <a class="btn btn-secondary" title="previous page" href="{{ link.href }}">« prev</a>
+      {% endif %}
+      {% endfor %}
+      {% for link in response.links %}
+      {% if link.rel == 'next' %}
+        <a class="btn btn-secondary" title="next page" href="{{ link.href }}">next »</a>
+      {% endif %}
+      {% endfor %}
     {% endif %}
-  {% endfor %}
+    </div>
+  </div>
 </div>
 
 <div class="table-responsive">
@@ -71,46 +73,16 @@
 </div>
 
 <script>
-function changePageSize() {
+document.getElementById("limit").addEventListener("change", (event) => {
+  // Set new page size
+  const limit = event.target.value;
   var url = "{{ template.api_root }}/collections?";
   const searchParams = new URLSearchParams(window.location.search);
-  searchParams.set('limit', $("#limit").val());
+  searchParams.set('limit', limit);
+  searchParams.set('offset', 0);
   url += searchParams.toString();
   window.location.href = url;
-}
-$(function() {
-    //
-    // paging
-    //
-    var offset = 0; // defaults
-    var limit = 10;
-
-    {% if "offset" in template.params %}
-    offset = {{ template.params.offset }};
-    {% endif %}
-    {% if "limit" in template.params %}
-    limit = {{ template.params.limit }};
-    {% endif %}
-
-    var current_page = 1;
-    if (limit > 0) {
-      current_page = Math.ceil((offset + limit) / limit);
-    }
-    $("#current_page").html(current_page);
-
-    var total_pages = 1;
-    if (limit > 0) {
-      total_pages = Math.ceil({{ response.numberMatched }} / limit);
-    }
-    $("#total_pages").html(total_pages);
-
-    //
-    // event handling
-    //
-    $("#limit").on("change", function() {
-      changePageSize();
-    });
 });
 </script>
-
-{% include "footer.html" %}
+{% endif %}
+{% endblock %}

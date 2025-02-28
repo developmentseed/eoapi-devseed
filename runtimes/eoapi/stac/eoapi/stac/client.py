@@ -2,6 +2,7 @@
 
 import csv
 import re
+import math
 from typing import (
     Any,
     Dict,
@@ -393,11 +394,21 @@ class PgSTACClient(CoreCrudClient):
             )
 
         if output_type == MimeTypes.html:
+            offset = int(request.query_params.get("offset") or 0)
+            limit = int(request.query_params.get("limit") or 10)
+
+            current_page = 1
+            if limit > 0:
+                current_page = math.ceil((offset + limit) / limit)
+
             return create_html_response(
                 request,
                 collections,
                 template_name="collections",
                 title="Collections list",
+                current_page=current_page,
+                limit=limit,
+                offset=offset,
             )
 
         return collections
