@@ -1,8 +1,8 @@
 """eoapi-devseed: Custom pgstac client."""
 
 import csv
-import re
 import math
+import re
 from typing import (
     Any,
     Dict,
