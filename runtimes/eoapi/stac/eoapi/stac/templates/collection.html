@@ -44,39 +44,52 @@
     </ul>
   </div>
   <div class="col-sm">
+    {% if response.extent and response.extent.spatial %}
     <div id="map" class="rounded" style="width: 100%; height: 400px">
       Loading...
     </div>
+    {% endif %}
   </div>
 </div>
 
+{% if response.extent and response.extent.spatial %}
 <script>
   $(function() {
-    var collection = {{ response|tojson }};
-    if (collection.extent && collection.extent.spatial){
-      var bbox = collection.extent.spatial.bbox[0]
-      var bbox_polygon = L.polygon([
+    const collection = {{ response|tojson }};
+    var map = L.map('map').setView([0, 0], 1);
+    map.addLayer(new L.TileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: 'Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      }
+    ));
+
+    for (let i = 0, len = collection.extent.spatial.bbox.length; i < len; i++) {
+      const options = i === 0 ? {
+        fill: false,
+        weight: 2
+      } : {
+        color: "red",
+        fill: false,
+        dashArray: 2,
+        weight: 1
+      };
+      const bbox = collection.extent.spatial.bbox[i];
+      const bbox_polygon = L.polygon([
         [bbox[1], bbox[0]],
         [bbox[1], bbox[2]],
         [bbox[3], bbox[2]],
         [bbox[3], bbox[0]]
-      ]);
+      ], options);
 
-      var map = L.map('map').setView([0, 0], 1);
-      map.addLayer(new L.TileLayer(
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 18,
-          attribution: 'Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-        }
-      ));
 
       map.addLayer(bbox_polygon);
-      map.fitBounds(bbox_polygon.getBounds());
-    } else {
-      document.getElementById("map").style.display = "none";
+      if (i === 0) {
+        map.fitBounds(bbox_polygon.getBounds());
+      }
     }
-
   });
 </script>
+{% endif %}
 
 {% include "footer.html" %}
