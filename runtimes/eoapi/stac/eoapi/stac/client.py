@@ -512,12 +512,17 @@ class PgSTACClient(CoreCrudClient):
             )
 
         if output_type == MimeTypes.html:
+            offset = int(request.query_params.get("offset") or 0)
+            limit = int(request.query_params.get("limit") or 10)
+
             item_collection["id"] = collection_id
             return create_html_response(
                 request,
                 item_collection,
                 template_name="items",
                 title=f"{collection_id} items",
+                limit=limit,
+                offset=offset,
             )
 
         elif output_type == MimeTypes.csv:
