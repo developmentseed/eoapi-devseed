@@ -1,10 +1,11 @@
-{% include "header.html" %}
+{% extends "base.html" %}
 {% if params %}
   {% set urlq = url + '?' + params + '&' %}
   {% else %}
   {% set urlq = url + '?' %}
 {% endif %}
 
+{% block content %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-light">
     {% for crumb in crumbs %} {% if not loop.last %}
@@ -21,18 +22,24 @@
   </ol>
 </nav>
 
-<h1>Collection: {{ response.title or response.id }}</h1>
+<h1 class="my-4">
+  <span class="d-block text-uppercase text-muted h6 mb-0">Collection:</span>
+  {{ response.title or response.id }}
+</h1>
 
 <div class="row">
-  <div class="col-sm">
-    <p>{{ response.description or response.title or response.id }}</p>
-    {% if "keywords" in response and length(response.keywords) > 0 %}
-    <div id="keywords">
-      <p>
+  <div class="col-md-7">
+    {% if response.description %}
+    <p>{{ response.description }}</p>
+    {% endif %}
+    {% if "keywords" in response and response.keywords|length > 0 %}
+    <div class="d-flex align-items-center mb-4">
+      {% include "icons/tag.html" %}
+      <ul class="mb-0 pl-2">
         {% for keyword in response.keywords %}
-        <span class="badge badge-secondary">{{ keyword }}</span>
+        <li class="badge badge-secondary">{{ keyword }}</li>
         {% endfor %}
-      </p>
+      </lul>
     </div>
     {% endif %}
 
@@ -43,40 +50,64 @@
       {% endfor %}
     </ul>
   </div>
-  <div class="col-sm">
+  <div class="col-md-5">
+    {% if response.license %}
+    <div class="d-flex align-items-center mb-2">
+      {% include "icons/license.html" %}
+      <p class="mb-0 pl-2">{{ response.license }}</p>
+    </div>
+    {% endif %}
+    {% if response.extent and response.extent.temporal %}
+    <div class="d-flex align-items-center mb-2">
+      {% include "icons/clock.html" %}
+      <p class="mb-0 pl-2">{{ response.extent.temporal.interval.0.0 or "..." }} — {{ response.extent.temporal.interval.0.1 or "..." }}</p>
+    </div>
+    {% endif %}
+    {% if response.extent and response.extent.spatial %}
     <div id="map" class="rounded" style="width: 100%; height: 400px">
       Loading...
     </div>
+    {% endif %}
   </div>
 </div>
 
+{% if response.extent and response.extent.spatial %}
 <script>
-  $(function() {
-    var collection = {{ response|tojson }};
-    if (collection.extent && collection.extent.spatial){
-      var bbox = collection.extent.spatial.bbox[0]
-      var bbox_polygon = L.polygon([
+  window.addEventListener("load", function() {
+    const collection = {{ response|tojson }};
+    var map = L.map('map').setView([0, 0], 1);
+    map.addLayer(new L.TileLayer(
+      'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: 'Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      }
+    ));
+
+    for (let i = 0, len = collection.extent.spatial.bbox.length; i < len; i++) {
+      const options = i === 0 ? {
+        fill: false,
+        weight: 2
+      } : {
+        color: "red",
+        fill: false,
+        dashArray: 2,
+        weight: 1
+      };
+      const bbox = collection.extent.spatial.bbox[i];
+      const bbox_polygon = L.polygon([
         [bbox[1], bbox[0]],
         [bbox[1], bbox[2]],
         [bbox[3], bbox[2]],
         [bbox[3], bbox[0]]
-      ]);
+      ], options);
 
-      var map = L.map('map').setView([0, 0], 1);
-      map.addLayer(new L.TileLayer(
-        'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 18,
-          attribution: 'Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-        }
-      ));
 
       map.addLayer(bbox_polygon);
-      map.fitBounds(bbox_polygon.getBounds());
-    } else {
-      document.getElementById("map").style.display = "none";
+      if (i === 0) {
+        map.fitBounds(bbox_polygon.getBounds());
+      }
     }
-
   });
 </script>
-
-{% include "footer.html" %}
+{% endif %}
+{% endblock %}
