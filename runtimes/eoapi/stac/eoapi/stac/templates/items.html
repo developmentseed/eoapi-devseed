@@ -96,7 +96,6 @@
       let url = "{{ template.api_root }}/collections/{{ response.id }}/items?";
       const searchParams = new URLSearchParams(window.location.search);
       searchParams.set('limit', limit);
-      searchParams.set('offset', 0);
       url += searchParams.toString();
       window.location.href = url;
     });
