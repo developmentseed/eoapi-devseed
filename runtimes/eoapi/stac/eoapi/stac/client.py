@@ -518,7 +518,7 @@ class PgSTACClient(CoreCrudClient):
                 item_collection,
                 template_name="items",
                 title=f"{collection_id} items",
-                limit=limit
+                limit=limit,
             )
 
         elif output_type == MimeTypes.csv:
