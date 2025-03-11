@@ -27,7 +27,7 @@
     Showing {{ offset + 1 }} - {{ offset + response.numberReturned }} of {{ response.numberMatched }} collections
   </div>
 
-  <form id="search-form" class="d-flex flex-wrap flex-grow-1" style="gap: 8px" onsubmit="return submitSearch(event)">
+  <form id="search-form" class="d-flex flex-wrap flex-grow-1" style="gap: 8px">
     <div class="input-group input-group-sm" style="max-width: 180px">
       <input type="text" class="form-control" id="q" placeholder="Text search"
              value="{{ request.query_params.get('q', '') }}" title="Text search">
@@ -95,7 +95,7 @@ document.getElementById("limit").addEventListener("change", (event) => {
   window.location.href = "{{ template.api_root }}/collections?" + searchParams.toString();
 });
 
-function submitSearch(event) {
+document.getElementById("search-form").addEventListener("submit", (event) => {
   event.preventDefault();
   const searchParams = new URLSearchParams();
 
@@ -107,7 +107,7 @@ function submitSearch(event) {
 
   window.location.href = "{{ template.api_root }}/collections?" + searchParams.toString();
   return false;
-}
+});
 
 document.getElementById("clear-search").addEventListener("click", () => {
   const searchParams = new URLSearchParams();
