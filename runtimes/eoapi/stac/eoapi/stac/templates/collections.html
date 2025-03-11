@@ -22,20 +22,34 @@
   <p>You need to add STAC Collections and Items; for example by following the <a href="https://github.com/vincentsarago/MAXAR_opendata_to_pgstac">MAXAR open data demo</a> or <a href="https://github.com/developmentseed/eoAPI/tree/main/demo">other demos.</a></p>
 </div>
 {% else %}
-<div class="d-flex flex-row align-items-center mb-4">
-  <div class="flex-grow-1">
+<div class="d-flex flex-row align-items-center mb-4 flex-wrap">
+  <div class="mr-3">
     Showing {{ offset + 1 }} - {{ offset + response.numberReturned }} of {{ response.numberMatched }} collections
   </div>
+
+  <form id="search-form" class="d-flex flex-wrap flex-grow-1" style="gap: 8px">
+    <div class="input-group input-group-sm" style="max-width: 180px">
+      <input type="text" class="form-control" id="q" placeholder="Text search"
+             value="{{ request.query_params.get('q', '') }}" title="Text search">
+    </div>
+
+    <div class="btn-group btn-group-sm">
+      <button type="submit" class="btn btn-primary">Search</button>
+      <button type="button" id="clear-search" class="btn btn-secondary">Clear</button>
+    </div>
+  </form>
+
   <div class="form-inline" style="gap: 10px">
     <div class="d-flex">
-      <label for="limit">Page size: </label>
-      <select class="form-control form-control-sm ml-1" id="limit" aria-label="Select page size"> <!-- TODO: dynamically populate the values based on oga_max_limit -->
+      <label for="limit" class="mr-1 small">Page size:</label>
+      <select class="form-control form-control-sm" id="limit" aria-label="Select page size" style="width: 70px">
         <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
         <option value="25" {% if limit == 25 %}selected{% endif %}>25</option>
         <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
         <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
       </select>
     </div>
+
     {% if response.links|length > 0 %}
     <div class="btn-group btn-group-sm" role="group" aria-label="Paginate">
       {% for link in response.links %}
@@ -48,8 +62,8 @@
         <a class="btn btn-secondary" title="next page" href="{{ link.href }}">next »</a>
       {% endif %}
       {% endfor %}
-    {% endif %}
     </div>
+    {% endif %}
   </div>
 </div>
 
@@ -74,14 +88,31 @@
 
 <script>
 document.getElementById("limit").addEventListener("change", (event) => {
-  // Set new page size
   const limit = event.target.value;
-  var url = "{{ template.api_root }}/collections?";
   const searchParams = new URLSearchParams(window.location.search);
   searchParams.set('limit', limit);
   searchParams.set('offset', 0);
-  url += searchParams.toString();
-  window.location.href = url;
+  window.location.href = "{{ template.api_root }}/collections?" + searchParams.toString();
+});
+
+document.getElementById("search-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const searchParams = new URLSearchParams();
+
+  const q = document.getElementById('q').value.trim();
+  const limit = document.getElementById('limit').value;
+
+  if (q) searchParams.set('q', q);
+  searchParams.set('limit', limit);
+
+  window.location.href = "{{ template.api_root }}/collections?" + searchParams.toString();
+  return false;
+});
+
+document.getElementById("clear-search").addEventListener("click", () => {
+  const searchParams = new URLSearchParams();
+  searchParams.set('limit', document.getElementById('limit').value);
+  window.location.href = "{{ template.api_root }}/collections?" + searchParams.toString();
 });
 </script>
 {% endif %}
