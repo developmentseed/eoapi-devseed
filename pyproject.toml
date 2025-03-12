@@ -22,3 +22,7 @@ dev = [
     "pypgstac==0.9.3",
     "pytest>=8.3.4",
 ]
+load = [
+    "pgstacrs>=0.1.1",
+    "stacrs>=0.5.9",
+]
