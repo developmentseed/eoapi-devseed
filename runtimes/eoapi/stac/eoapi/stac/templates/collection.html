@@ -39,7 +39,7 @@
         {% for keyword in response.keywords %}
         <li class="badge badge-secondary">{{ keyword }}</li>
         {% endfor %}
-      </lul>
+      </ul>
     </div>
     {% endif %}
 
@@ -72,10 +72,24 @@
 </div>
 
 {% if response.extent and response.extent.spatial %}
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.0.0/Control.FullScreen.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.0.0/Control.FullScreen.min.js"></script>
+
 <script>
   window.addEventListener("load", function() {
     const collection = {{ response|tojson }};
-    var map = L.map('map').setView([0, 0], 1);
+    var map = L.map('map', {
+      fullscreenControl: true,
+      fullscreenControlOptions: {
+        position: 'bottomright',
+        title: 'View Fullscreen',
+        titleCancel: 'Exit Fullscreen',
+        content: '<i class="fa fa-expand"></i>'  // You can customize this icon
+      }
+    }).setView([0, 0], 1);
+    
     var osmLayer = new L.TileLayer(
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
@@ -84,6 +98,7 @@
     );
     map.addLayer(osmLayer);
 
+    // Draw the bounding boxes
     for (let i = 0, len = collection.extent.spatial.bbox.length; i < len; i++) {
       const options = i === 0 ? {
         fill: false,
@@ -102,35 +117,29 @@
         [bbox[3], bbox[0]]
       ], options);
 
-
       map.addLayer(bbox_polygon);
       if (i === 0) {
         map.fitBounds(bbox_polygon.getBounds());
       }
     }
-    // Find all TileJSON links
+    
+    // Add any tilejson links as layers to the map
     const tileJsonLinks = collection.links.filter(link => link.rel === "tilejson");
     
-    // Create an object to hold our overlay layers
     const overlayLayers = {};
     
-    // Process each TileJSON link
     if (tileJsonLinks.length > 0) {
       tileJsonLinks.forEach((link, index) => {
-        // Fetch the TileJSON data
         fetch(link.href)
           .then(response => response.json())
           .then(tileJson => {
-            // Create a tile layer using the TileJSON data
             const tileLayer = L.tileLayer(tileJson.tiles[0], {
               attribution: tileJson.attribution || '',
               minZoom: tileJson.minzoom || 0,
               maxZoom: tileJson.maxzoom || 18
             });
             
-            // Add a title for the layer
-            const layerName = link.title || `TileJSON Layer ${index + 1}`;
-            overlayLayers[layerName] = tileLayer;
+            overlayLayers[layerName] = link.title || `TileJSON Layer ${index + 1}`;
             
             // Add the first layer to the map by default
             if (index === 0) {
@@ -153,7 +162,17 @@
           });
       });
     }
-
+    
+    // Handle fullscreen change event to resize map
+    map.on('fullscreenchange', function() {
+      if (map.isFullscreen()) {
+        console.log('Entered fullscreen');
+      } else {
+        console.log('Exited fullscreen');
+      }
+      // Make sure the map fills the container after fullscreen changes
+      map.invalidateSize();
+    });
   });
 </script>
 {% endif %}

@@ -260,7 +260,7 @@ def add_render_links(collection: Collection, titiler_endpoint: str) -> Collectio
                 {
                     "rel": "tilejson",
                     "title": f"{render} tilejson",
-                    "type": MimeTypes.html.value,
+                    "type": MimeTypes.json.value,
                     "href": f"{base_url}/tilejson.json?{query_params}",
                 }
             )
