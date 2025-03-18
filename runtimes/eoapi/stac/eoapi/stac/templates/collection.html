@@ -139,7 +139,8 @@
               maxZoom: tileJson.maxzoom || 18
             });
             
-            overlayLayers[layerName] = link.title || `TileJSON Layer ${index + 1}`;
+            const layerName = link.title || `TileJSON Layer ${index + 1}`;
+            overlayLayers[layerName] = tileLayer;
             
             // Add the first layer to the map by default
             if (index === 0) {
