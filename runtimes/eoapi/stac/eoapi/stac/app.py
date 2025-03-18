@@ -212,6 +212,7 @@ api = StacApi(
         title=settings.stac_fastapi_title,
         description=settings.stac_fastapi_description,
         pgstac_search_model=search_post_model,
+        titiler_endpoint=settings.titiler_endpoint,
     ),
     item_get_request_model=item_get_model,
     items_get_request_model=items_get_model,

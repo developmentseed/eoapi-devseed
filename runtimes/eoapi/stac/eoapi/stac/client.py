@@ -14,7 +14,7 @@ from typing import (
     Type,
     get_args,
 )
-from urllib.parse import unquote_plus, urljoin
+from urllib.parse import unquote_plus, urlencode, urljoin
 
 import attr
 import jinja2
@@ -243,9 +243,35 @@ class FiltersClient(PgSTACFiltersClient):
         return queryables
 
 
+def add_render_links(collection: Collection, titiler_endpoint: str) -> Collection:
+    if renders := collection.get("renders"):
+        base_url = f"{titiler_endpoint}/collections/{collection['id']}/WebMercatorQuad"
+        for render, metadata in renders.items():
+            query_params = urlencode(metadata, doseq=True)
+            collection["links"].append(
+                {
+                    "rel": "map",
+                    "title": f"{render} interactive map",
+                    "type": MimeTypes.html.value,
+                    "href": f"{base_url}/map?{query_params}",
+                }
+            )
+            collection["links"].append(
+                {
+                    "rel": "tilejson",
+                    "title": f"{render} tilejson",
+                    "type": MimeTypes.html.value,
+                    "href": f"{base_url}/tilejson.json?{query_params}",
+                }
+            )
+
+    return collection
+
+
 @attr.s
 class PgSTACClient(CoreCrudClient):
     pgstac_search_model: Type[PgstacSearch] = attr.ib(default=PgstacSearch)
+    titiler_endpoint: Optional[str] = attr.ib(default=None)
 
     async def landing_page(
         self,
@@ -383,6 +409,9 @@ class PgSTACClient(CoreCrudClient):
         **kwargs,
     ) -> Collections:
         collections = await super().all_collections(request, *args, **kwargs)
+        if self.titiler_endpoint:
+            for collection in collections["collections"]:
+                collection = add_render_links(collection, self.titiler_endpoint)
 
         output_type: Optional[MimeTypes]
         if f:
@@ -424,6 +453,9 @@ class PgSTACClient(CoreCrudClient):
         collection = await super().get_collection(
             collection_id, request, *args, **kwargs
         )
+
+        if self.titiler_endpoint:
+            collection = add_render_links(collection, self.titiler_endpoint)
 
         output_type: Optional[MimeTypes]
         if f:
