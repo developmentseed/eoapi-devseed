@@ -244,13 +244,14 @@ class FiltersClient(PgSTACFiltersClient):
 
 
 def add_render_links(collection: Collection, titiler_endpoint: str) -> Collection:
+    """Adds links to html preview and tilejson endpoints for a collection"""
     if renders := collection.get("renders"):
         base_url = f"{titiler_endpoint}/collections/{collection['id']}/WebMercatorQuad"
         for render, metadata in renders.items():
             query_params = urlencode(metadata, doseq=True)
             collection["links"].append(
                 {
-                    "rel": "map",
+                    "rel": Relations.preview.value,
                     "title": f"{render} interactive map",
                     "type": MimeTypes.html.value,
                     "href": f"{base_url}/map?{query_params}",
@@ -258,8 +259,8 @@ def add_render_links(collection: Collection, titiler_endpoint: str) -> Collectio
             )
             collection["links"].append(
                 {
-                    "rel": "tilejson",
-                    "title": f"{render} tilejson",
+                    "rel": Relations.tiles.value,
+                    "title": f"{render} tiles",
                     "type": MimeTypes.json.value,
                     "href": f"{base_url}/tilejson.json?{query_params}",
                 }
@@ -271,7 +272,6 @@ def add_render_links(collection: Collection, titiler_endpoint: str) -> Collectio
 @attr.s
 class PgSTACClient(CoreCrudClient):
     pgstac_search_model: Type[PgstacSearch] = attr.ib(default=PgstacSearch)
-    titiler_endpoint: Optional[str] = attr.ib(default=None)
 
     async def landing_page(
         self,
@@ -409,9 +409,9 @@ class PgSTACClient(CoreCrudClient):
         **kwargs,
     ) -> Collections:
         collections = await super().all_collections(request, *args, **kwargs)
-        if self.titiler_endpoint:
+        if titiler_endpoint := request.app.state.settings.titiler_endpoint:
             for collection in collections["collections"]:
-                collection = add_render_links(collection, self.titiler_endpoint)
+                collection = add_render_links(collection, titiler_endpoint)
 
         output_type: Optional[MimeTypes]
         if f:
@@ -454,8 +454,8 @@ class PgSTACClient(CoreCrudClient):
             collection_id, request, *args, **kwargs
         )
 
-        if self.titiler_endpoint:
-            collection = add_render_links(collection, self.titiler_endpoint)
+        if titiler_endpoint := request.app.state.settings.titiler_endpoint:
+            collection = add_render_links(collection, titiler_endpoint)
 
         output_type: Optional[MimeTypes]
         if f:

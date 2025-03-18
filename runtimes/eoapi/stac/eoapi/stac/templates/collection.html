@@ -124,7 +124,7 @@
     }
     
     // Add any tilejson links as layers to the map
-    const tileJsonLinks = collection.links.filter(link => link.rel === "tilejson");
+    const tileJsonLinks = collection.links.filter(link => link.rel === "tiles");
     
     const overlayLayers = {};
     
@@ -133,6 +133,7 @@
         fetch(link.href)
           .then(response => response.json())
           .then(tileJson => {
+            console.log(tileJson)
             const tileLayer = L.tileLayer(tileJson.tiles[0], {
               attribution: tileJson.attribution || '',
               minZoom: tileJson.minzoom || 0,
