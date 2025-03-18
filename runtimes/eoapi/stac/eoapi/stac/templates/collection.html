@@ -76,12 +76,13 @@
   window.addEventListener("load", function() {
     const collection = {{ response|tojson }};
     var map = L.map('map').setView([0, 0], 1);
-    map.addLayer(new L.TileLayer(
+    var osmLayer = new L.TileLayer(
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: 'Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
       }
-    ));
+    );
+    map.addLayer(osmLayer);
 
     for (let i = 0, len = collection.extent.spatial.bbox.length; i < len; i++) {
       const options = i === 0 ? {
@@ -107,6 +108,52 @@
         map.fitBounds(bbox_polygon.getBounds());
       }
     }
+    // Find all TileJSON links
+    const tileJsonLinks = collection.links.filter(link => link.rel === "tilejson");
+    
+    // Create an object to hold our overlay layers
+    const overlayLayers = {};
+    
+    // Process each TileJSON link
+    if (tileJsonLinks.length > 0) {
+      tileJsonLinks.forEach((link, index) => {
+        // Fetch the TileJSON data
+        fetch(link.href)
+          .then(response => response.json())
+          .then(tileJson => {
+            // Create a tile layer using the TileJSON data
+            const tileLayer = L.tileLayer(tileJson.tiles[0], {
+              attribution: tileJson.attribution || '',
+              minZoom: tileJson.minzoom || 0,
+              maxZoom: tileJson.maxzoom || 18
+            });
+            
+            // Add a title for the layer
+            const layerName = link.title || `TileJSON Layer ${index + 1}`;
+            overlayLayers[layerName] = tileLayer;
+            
+            // Add the first layer to the map by default
+            if (index === 0) {
+              tileLayer.addTo(map);
+            }
+            
+            // Add layer control after all layers are processed
+            if (index === tileJsonLinks.length - 1) {
+              // Define the base layers
+              const baseLayers = {
+                "OpenStreetMap": osmLayer
+              };
+              
+              // Add the layer control to the map
+              L.control.layers(baseLayers, overlayLayers).addTo(map);
+            }
+          })
+          .catch(error => {
+            console.error("Error loading TileJSON:", error);
+          });
+      });
+    }
+
   });
 </script>
 {% endif %}
