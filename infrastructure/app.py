@@ -4,6 +4,7 @@ import boto3
 import yaml
 from aws_cdk import (
     App,
+    Duration,
     RemovalPolicy,
     Stack,
     aws_certificatemanager,
@@ -388,10 +389,17 @@ class eoAPIStack(Stack):
                 default_root_object="index.html",
                 error_responses=[
                     aws_cloudfront.ErrorResponse(
+                        http_status=403,
+                        response_http_status=200,
+                        response_page_path="/index.html",
+                        ttl=Duration.seconds(0),
+                    ),
+                    aws_cloudfront.ErrorResponse(
                         http_status=404,
                         response_http_status=200,
                         response_page_path="/index.html",
-                    )
+                        ttl=Duration.seconds(0),
+                    ),
                 ],
                 certificate=aws_certificatemanager.Certificate.from_certificate_arn(
                     self,
