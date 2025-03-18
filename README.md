@@ -178,3 +178,14 @@ AWS_REGION=us-west-2 source scripts/get-pgstac-creds.sh $EOAPI_PGSTAC_SECRET_ARN
 uv sync --group load
 uv run scripts/load --stac-api https://stac.earthgenome.org --collection-id sentinel2-temporal-mosaics
 ```
+
+This can be helpful for loading collections and items into your local docker network!
+
+```bash
+export PGUSER=username
+export PGPASSWORD=password
+export PGHOST=localhost
+export PGPORT=5439
+export PGDATABASE=postgis
+uv run scripts/load --stac-api https://stac.eoapi.dev --collection-id MAXAR_Maui_Hawaii_fires_Aug_23 --force
+```
