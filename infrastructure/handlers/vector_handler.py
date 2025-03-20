@@ -3,23 +3,16 @@
 import asyncio
 import logging
 import os
+from importlib.resources import files as resources_files
 
 from eoapi.vector.app import app
-from eoapi.vector.config import ApiSettings
+from eoapi.vector.config import PostgresSettings
 from mangum import Mangum
 from tipg.collections import register_collection_catalog
 from tipg.database import connect_to_db
 
 logging.getLogger("mangum.lifespan").setLevel(logging.ERROR)
 logging.getLogger("mangum.http").setLevel(logging.ERROR)
-
-settings = ApiSettings()
-
-try:
-    from importlib.resources import files as resources_files  # type: ignore
-except ImportError:
-    # Try backported to PY<39 `importlib_resources`.
-    from importlib_resources import files as resources_files  # type: ignore
 
 
 CUSTOM_SQL_DIRECTORY = resources_files("eoapi.vector") / "sql"
@@ -31,7 +24,7 @@ async def startup_event() -> None:
     """Connect to database on startup."""
     await connect_to_db(
         app,
-        settings=settings.load_postgres_settings(),
+        settings=PostgresSettings(),
         # We enable both pgstac and public schemas (pgstac will be used by custom functions)
         schemas=["pgstac", "public"],
         user_sql_files=sql_files,

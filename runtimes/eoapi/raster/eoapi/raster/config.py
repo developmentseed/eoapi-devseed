@@ -2,15 +2,15 @@
 
 import base64
 import json
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import boto3
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings
-from titiler.pgstac.settings import PostgresSettings
+from titiler.pgstac.settings import PostgresSettings as _PostgresSettings
 
 
-def get_secret_dict(secret_name: str):
+def get_secret_dict(secret_name: str) -> Dict:
     """Retrieve secrets from AWS Secrets Manager
 
     Args:
@@ -43,8 +43,6 @@ class ApiSettings(BaseSettings):
     debug: bool = False
     root_path: str = ""
 
-    pgstac_secret_arn: Optional[str] = None
-
     model_config = {
         "env_file": ".env",
         "extra": "allow",
@@ -60,18 +58,24 @@ class ApiSettings(BaseSettings):
         """Parse CORS methods."""
         return [method.strip() for method in v.split(",")]
 
-    def load_postgres_settings(self) -> "PostgresSettings":
-        """Load postgres connection params from AWS secret"""
 
-        if self.pgstac_secret_arn:
-            secret = get_secret_dict(self.pgstac_secret_arn)
+class PostgresSettings(_PostgresSettings):
+    """Extent titiler-pgstac PostgresSettings settings"""
 
-            return PostgresSettings(
-                postgres_host=secret["host"],
-                postgres_dbname=secret["dbname"],
-                postgres_user=secret["username"],
-                postgres_pass=secret["password"],
-                postgres_port=secret["port"],
+    pgstac_secret_arn: Optional[str] = None
+
+    @model_validator(mode="before")
+    def get_postgres_setting(cls, data: Any) -> Any:
+        if arn := data.get("pgstac_secret_arn"):
+            secret = get_secret_dict(arn)
+            data.update(
+                {
+                    "postgres_host": secret["host"],
+                    "postgres_dbname": secret["dbname"],
+                    "postgres_user": secret["username"],
+                    "postgres_pass": secret["password"],
+                    "postgres_port": secret["port"],
+                }
             )
-        else:
-            return PostgresSettings()
+
+        return data

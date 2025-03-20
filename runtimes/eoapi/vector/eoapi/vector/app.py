@@ -2,7 +2,7 @@
 
 import logging
 from contextlib import asynccontextmanager
-from importlib.resources import files as resources_files  # type: ignore
+from importlib.resources import files as resources_files
 
 import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
@@ -17,13 +17,12 @@ from tipg.factory import Endpoints as TiPgEndpoints
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 
 from . import __version__ as eoapi_vector_version
-from .config import ApiSettings
+from .config import ApiSettings, PostgresSettings
 from .logs import init_logging
 
 CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
 settings = ApiSettings()
-postgres_settings = settings.load_postgres_settings()
 auth_settings = OpenIdConnectSettings()
 
 # Logs
@@ -53,7 +52,7 @@ async def lifespan(app: FastAPI):
     logger.debug("Connecting to db...")
     await connect_to_db(
         app,
-        settings=postgres_settings,
+        settings=PostgresSettings(),
         # We enable both pgstac and public schemas (pgstac will be used by custom functions)
         schemas=["pgstac", "public"],
         user_sql_files=list(CUSTOM_SQL_DIRECTORY.glob("*.sql")),  # type: ignore

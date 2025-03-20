@@ -47,7 +47,7 @@ from titiler.pgstac.factory import (
 from titiler.pgstac.reader import PgSTACReader
 
 from . import __version__ as eoapi_raster_version
-from .config import ApiSettings
+from .config import ApiSettings, PostgresSettings
 from .logs import init_logging
 
 settings = ApiSettings()
@@ -90,7 +90,7 @@ templates = Jinja2Templates(env=jinja2_env)
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
     logger.debug("Connecting to db...")
-    await connect_to_db(app, settings=settings.load_postgres_settings())
+    await connect_to_db(app, settings=PostgresSettings())
     logger.debug("Connected to db.")
 
     yield
