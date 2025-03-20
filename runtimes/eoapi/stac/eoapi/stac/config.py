@@ -2,14 +2,14 @@
 
 import base64
 import json
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import boto3
 from pydantic import model_validator
 from stac_fastapi.pgstac import config
 
 
-def get_secret_dict(secret_name: str):
+def get_secret_dict(secret_name: str) -> Dict:
     """Retrieve secrets from AWS Secrets Manager
 
     Args:

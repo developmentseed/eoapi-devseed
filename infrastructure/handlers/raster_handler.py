@@ -5,23 +5,18 @@ import logging
 import os
 
 from eoapi.raster.app import app
-from eoapi.raster.config import ApiSettings
+from eoapi.raster.config import PostgresSettings
 from mangum import Mangum
 from titiler.pgstac.db import connect_to_db
 
 logging.getLogger("mangum.lifespan").setLevel(logging.ERROR)
 logging.getLogger("mangum.http").setLevel(logging.ERROR)
 
-settings = ApiSettings()
-
 
 @app.on_event("startup")
 async def startup_event() -> None:
     """Connect to database on startup."""
-    await connect_to_db(
-        app,
-        settings=settings.load_postgres_settings(),
-    )
+    await connect_to_db(app, settings=PostgresSettings())
 
 
 handler = Mangum(app, lifespan="off")
