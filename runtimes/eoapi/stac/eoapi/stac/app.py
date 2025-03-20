@@ -44,7 +44,7 @@ from starlette_cramjam.middleware import CompressionMiddleware
 from . import __version__ as eoapi_devseed_version
 from .api import StacApi
 from .client import FiltersClient, PgSTACClient
-from .config import Settings
+from .config import PostgresSettings, Settings
 from .extensions import (
     HTMLorGeoMultiOutputExtension,
     HTMLorGeoOutputExtension,
@@ -65,6 +65,7 @@ jinja2_env = jinja2.Environment(
 templates = Jinja2Templates(env=jinja2_env)
 
 settings = Settings()
+pg_settings = PostgresSettings()
 auth_settings = OpenIdConnectSettings()
 
 
@@ -172,7 +173,7 @@ item_get_model = create_request_model(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
-    await connect_to_db(app)
+    await connect_to_db(app, postgres_settings=pg_settings)
     yield
     await close_db_connection(app)
 

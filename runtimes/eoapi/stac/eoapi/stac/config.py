@@ -33,7 +33,7 @@ def get_secret_dict(secret_name: str):
 
 
 class Settings(config.Settings):
-    """Extent stac-fastapi-pgstac settings"""
+    """Extent stac-fastapi-pgstac API settings"""
 
     stac_fastapi_title: str = "eoAPI-stac"
     stac_fastapi_description: str = "Custom stac-fastapi application for eoAPI-Devseed"
@@ -41,12 +41,16 @@ class Settings(config.Settings):
 
     cachecontrol: str = "public, max-age=3600"
 
-    pgstac_secret_arn: Optional[str] = None
-
     titiler_endpoint: Optional[str] = None
     enable_transaction: bool = False
 
     debug: bool = False
+
+
+class PostgresSettings(config.PostgresSettings):
+    """Extent stac-fastapi-pgstac PostgresSettings settings"""
+
+    pgstac_secret_arn: Optional[str] = None
 
     @model_validator(mode="before")
     def get_postgres_setting(cls, data: Any) -> Any:
