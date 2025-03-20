@@ -143,3 +143,49 @@ Then, deploy
 ```
 uv run npx cdk deploy --all --require-approval never
 ```
+
+## Loading new collections/items
+
+### Copy collection from another STAC API
+
+One workflow for adding collections and items is to clone the metadata from another STAC API.
+You can do this with the following workflow:
+
+1. Set pgstac database credentials
+
+- for docker network:
+
+```bash
+export PGUSER=username
+export PGPASSWORD=password
+export PGHOST=localhost
+export PGPORT=5439
+export PGDATABASE=postgis
+```
+
+- for AWS deployment
+
+```bash
+AWS_REGION=us-west-2 source scripts/get-pgstac-creds.sh $EOAPI_PGSTAC_SECRET_ARN
+```
+
+> [!NOTE]
+> this will load the secret from AWS and set the Postgres environment variables
+
+2. Run the `load` script pointed at an external API and collection:
+
+```bash
+uv sync --group load
+uv run scripts/load --stac-api https://stac.earthgenome.org --collection-id sentinel2-temporal-mosaics
+```
+
+This can be helpful for loading collections and items into your local docker network!
+
+```bash
+export PGUSER=username
+export PGPASSWORD=password
+export PGHOST=localhost
+export PGPORT=5439
+export PGDATABASE=postgis
+uv run scripts/load --stac-api https://stac.eoapi.dev --collection-id MAXAR_Maui_Hawaii_fires_Aug_23 --force
+```

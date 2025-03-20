@@ -1,0 +1,118 @@
+#!/usr/bin/env python
+"""Fetch collection and item metadata from a STAC API and load it into your pgstac database
+
+Requires that you have the standard Postgres environment variables set:
+PGUSER, PGPASSWORD, PGHOST, PGPORT, PGDATABASE
+
+Example:
+uv run scripts/load \
+  --stac-api https://stac.earthgenome.org \
+  --collection-id sentinel2-temporal-mosaics
+"""
+
+import argparse
+import asyncio
+import os
+
+import httpx
+import stacrs
+from pgstacrs import Client as PgstacClient
+
+ITEM_BATCH_SIZE = 1000
+
+# optionally specify render parameters for a given collection
+RENDERS = {
+    "sentinel2-temporal-mosaics": {
+        year: {
+            "datetime": f"{year}-01-01T00:00:01Z/{year}-12-31T23:59:59Z",
+            "assets": ["B04", "B03", "B02"],
+            "rescale": [[0, 2000]],
+        }
+        for year in ["2019", "2020", "2021", "2022", "2023", "2024"]
+    }
+}
+
+
+async def load(stac_api: str, collection_id: str, force: bool = False) -> None:
+    username = os.getenv("PGUSER")
+    password = os.getenv("PGPASSWORD")
+    host = os.getenv("PGHOST")
+    port = os.getenv("PGPORT")
+    dbname = os.getenv("PGDATABASE")
+    pgstac_client = await PgstacClient.open(
+        f"postgresql://{username}:{password}@{host}:{port}/{dbname}"
+    )
+
+    collection_exists = await pgstac_client.get_collection(collection_id)
+    if collection_exists and force:
+        print(f"Deleting collection {collection_id}")
+        await pgstac_client.delete_collection(collection_id)
+
+    if await pgstac_client.get_collection(collection_id) is not None:
+        print(f"{collection_id} already exists, skipping!")
+        return
+
+    print(f"Getting collection {collection_id} from {stac_api}")
+    collection_request = httpx.get(f"{stac_api}/collections/{collection_id}")
+    collection_request.raise_for_status()
+    collection = collection_request.json()
+
+    # drop links from existing stac records
+    _ = collection.pop("links")
+
+    # add render extension metadata if defined in RENDERS
+    if renders := RENDERS.get(collection_id):
+        extensions = ["https://stac-extensions.github.io/render/v2.0.0/schema.json"]
+        extensions.extend(
+            (
+                e
+                for e in collection.get("stac_extensions", [])
+                if not e.startswith("https://stac-extensions.github.io/render")
+            )
+        )
+        collection["stac_extensions"] = extensions
+        collection["renders"] = renders
+
+    print("Getting items")
+    items = await stacrs.search(
+        href=stac_api,
+        collections=collection_id,
+        limit=100,
+    )
+
+    for item in items:
+        _ = item.pop("links")
+
+    print("Creating collection")
+    await pgstac_client.create_collection(collection)
+
+    print("Creating items")
+    for i in range(0, len(items), ITEM_BATCH_SIZE):
+        batch = items[i : i + ITEM_BATCH_SIZE]
+        print(
+            f"Processing batch {i // ITEM_BATCH_SIZE + 1}/{(len(items) + ITEM_BATCH_SIZE - 1) // ITEM_BATCH_SIZE} "
+            f"({len(batch)} items, {i}-{min(i + ITEM_BATCH_SIZE - 1, len(items) - 1)})"
+        )
+        await pgstac_client.create_items(batch)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Load data to pgstac")
+    parser.add_argument(
+        "--stac-api",
+        help="STAC API URL",
+    )
+    parser.add_argument(
+        "--collection-id",
+        help="Collection ID to load",
+    )
+    parser.add_argument(
+        "--force", action="store_true", help="Force deletion of existing collection"
+    )
+
+    args = parser.parse_args()
+
+    print(f"Using STAC API: {args.stac_api}")
+    print(f"Using Collection ID: {args.collection_id}")
+
+    asyncio.run(load(args.stac_api, args.collection_id, args.force))
