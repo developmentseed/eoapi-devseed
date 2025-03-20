@@ -29,6 +29,9 @@
 </h1>
 {% if response.features|length > 0 %}
 <div class="d-flex flex-row align-items-center mb-4">
+  <div class="flex-grow-1">
+    Showing {{ response.numberReturned }} of {{ response.numberMatched }} items
+  </div>
   <div class="form-inline ml-auto" style="gap: 10px">
     <div class="d-flex">
       <label for="limit">Page size: </label>
