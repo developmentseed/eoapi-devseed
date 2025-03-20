@@ -5,6 +5,7 @@ import logging
 import os
 
 from eoapi.stac.app import app
+from eoapi.stac.config import PostgresSettings
 from mangum import Mangum
 from stac_fastapi.pgstac.db import connect_to_db
 
@@ -15,7 +16,7 @@ logging.getLogger("mangum.http").setLevel(logging.ERROR)
 @app.on_event("startup")
 async def startup_event() -> None:
     """Connect to database on startup."""
-    await connect_to_db(app)
+    await connect_to_db(app, postgres_settings=PostgresSettings())
 
 
 handler = Mangum(app, lifespan="off")

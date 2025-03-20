@@ -14,20 +14,19 @@ from typing import (
     Type,
     get_args,
 )
-from urllib.parse import unquote_plus, urlencode, urljoin
+from urllib.parse import unquote_plus, urlencode
 
 import attr
 import jinja2
 import orjson
-from fastapi import Request
+from fastapi import HTTPException, Request
 from geojson_pydantic.geometries import parse_geometry_obj
+from pydantic import ValidationError
 from stac_fastapi.api.models import JSONResponse
 from stac_fastapi.pgstac.core import CoreCrudClient
 from stac_fastapi.pgstac.extensions.filter import FiltersClient as PgSTACFiltersClient
 from stac_fastapi.pgstac.models.links import ItemCollectionLinks
 from stac_fastapi.pgstac.types.search import PgstacSearch
-from stac_fastapi.types.errors import NotFoundError
-from stac_fastapi.types.requests import get_base_url
 from stac_fastapi.types.stac import (
     Collection,
     Collections,
@@ -275,7 +274,6 @@ class PgSTACClient(CoreCrudClient):
 
     async def landing_page(
         self,
-        request: Request,
         f: Optional[str] = None,
         **kwargs,
     ) -> LandingPage:
@@ -287,67 +285,9 @@ class PgSTACClient(CoreCrudClient):
             API landing page, serving as an entry point to the API.
 
         """
-        base_url = get_base_url(request)
+        request: Request = kwargs["request"]
 
-        landing_page = self._landing_page(
-            base_url=base_url,
-            conformance_classes=self.conformance_classes(),
-            extension_schemas=[],
-        )
-
-        # Add Queryables link
-        if self.extension_is_enabled("FilterExtension") or self.extension_is_enabled(
-            "SearchFilterExtension"
-        ):
-            landing_page["links"].append(
-                {
-                    "rel": Relations.queryables.value,
-                    "type": MimeTypes.jsonschema.value,
-                    "title": "Queryables",
-                    "href": urljoin(base_url, "queryables"),
-                }
-            )
-
-        # Add Aggregation links
-        if self.extension_is_enabled("AggregationExtension"):
-            landing_page["links"].extend(
-                [
-                    {
-                        "rel": "aggregate",
-                        "type": "application/json",
-                        "title": "Aggregate",
-                        "href": urljoin(base_url, "aggregate"),
-                    },
-                    {
-                        "rel": "aggregations",
-                        "type": "application/json",
-                        "title": "Aggregations",
-                        "href": urljoin(base_url, "aggregations"),
-                    },
-                ]
-            )
-
-        # Add OpenAPI URL
-        landing_page["links"].append(
-            {
-                "rel": Relations.service_desc.value,
-                "type": MimeTypes.openapi.value,
-                "title": "OpenAPI service description",
-                "href": str(request.url_for("openapi")),
-            }
-        )
-
-        # Add human readable service-doc
-        landing_page["links"].append(
-            {
-                "rel": Relations.service_doc.value,
-                "type": MimeTypes.html.value,
-                "title": "OpenAPI service documentation",
-                "href": str(request.url_for("swagger_ui_html")),
-            }
-        )
-
-        landing = LandingPage(**landing_page)
+        landing = await super().landing_page(**kwargs)
 
         output_type: Optional[MimeTypes]
         if f:
@@ -476,6 +416,37 @@ class PgSTACClient(CoreCrudClient):
 
         return collection
 
+    async def get_item(
+        self,
+        item_id: str,
+        collection_id: str,
+        request: Request,
+        f: Optional[str] = None,
+        **kwargs,
+    ) -> Item:
+        item = await super().get_item(item_id, collection_id, request, **kwargs)
+
+        output_type: Optional[MimeTypes]
+        if f:
+            output_type = MimeTypes[f]
+        else:
+            accepted_media = [MimeTypes[v] for v in get_args(GeoResponseType)]
+            output_type = accept_media_type(
+                request.headers.get("accept", ""), accepted_media
+            )
+
+        if output_type == MimeTypes.html:
+            return create_html_response(
+                request,
+                item,
+                template_name="item",
+                title=f"{collection_id}/{item_id} item",
+            )
+
+        return item
+
+    # NOTE: We can't use `super.item_collection(...)` because of the `fields` extension
+    # which, when used, might return a JSONResponse directly instead of a ItemCollection (TypeDict)
     async def item_collection(
         self,
         collection_id: str,
@@ -493,16 +464,6 @@ class PgSTACClient(CoreCrudClient):
         f: Optional[str] = None,
         **kwargs,
     ) -> ItemCollection:
-        output_type: Optional[MimeTypes]
-        if f:
-            output_type = MimeTypes[f]
-        else:
-            accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
-            )
-
-        # Check if collection exist
         await self.get_collection(collection_id, request=request)
 
         base_args = {
@@ -521,11 +482,29 @@ class PgSTACClient(CoreCrudClient):
             sortby=sortby,
         )
 
-        search_request = self.pgstac_search_model(**clean)
+        try:
+            search_request = self.pgstac_search_model(**clean)
+        except ValidationError as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid parameters provided {e}"
+            ) from e
+
         item_collection = await self._search_base(search_request, request=request)
         item_collection["links"] = await ItemCollectionLinks(
             collection_id=collection_id, request=request
         ).get_links(extra_links=item_collection["links"])
+
+        #######################################################################
+        # Custom Responses
+        #######################################################################
+        output_type: Optional[MimeTypes]
+        if f:
+            output_type = MimeTypes[f]
+        else:
+            accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
+            output_type = accept_media_type(
+                request.headers.get("accept", ""), accepted_media
+            )
 
         # Additional Headers for StreamingResponse
         additional_headers = {}
@@ -581,45 +560,8 @@ class PgSTACClient(CoreCrudClient):
 
         return ItemCollection(**item_collection)
 
-    async def get_item(
-        self,
-        item_id: str,
-        collection_id: str,
-        request: Request,
-        f: Optional[str] = None,
-        **kwargs,
-    ) -> Item:
-        output_type: Optional[MimeTypes]
-        if f:
-            output_type = MimeTypes[f]
-        else:
-            accepted_media = [MimeTypes[v] for v in get_args(GeoResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
-            )
-
-        # Check if collection exist
-        await self.get_collection(collection_id, request=request)
-
-        search_request = self.pgstac_search_model(
-            ids=[item_id], collections=[collection_id], limit=1
-        )
-        item_collection = await self._search_base(search_request, request=request)
-        if not item_collection["features"]:
-            raise NotFoundError(
-                f"Item {item_id} in Collection {collection_id} does not exist."
-            )
-
-        if output_type == MimeTypes.html:
-            return create_html_response(
-                request,
-                item_collection["features"][0],
-                template_name="item",
-                title=f"{collection_id}/{item_id} item",
-            )
-
-        return Item(**item_collection["features"][0])
-
+    # NOTE: We can't use `super.get_search(...)` because of the `fields` extension
+    # which, when used, might return a JSONResponse directly instead of a ItemCollection (TypeDict)
     async def get_search(
         self,
         request: Request,
@@ -639,16 +581,6 @@ class PgSTACClient(CoreCrudClient):
         f: Optional[str] = None,
         **kwargs,
     ) -> ItemCollection:
-        output_type: Optional[MimeTypes]
-        if f:
-            output_type = MimeTypes[f]
-        else:
-            accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
-            )
-
-        # Parse request parameters
         base_args = {
             "collections": collections,
             "ids": ids,
@@ -668,8 +600,26 @@ class PgSTACClient(CoreCrudClient):
             filter_lang=filter_lang,
         )
 
-        search_request = self.pgstac_search_model(**clean)
+        try:
+            search_request = self.pgstac_search_model(**clean)
+        except ValidationError as e:
+            raise HTTPException(
+                status_code=400, detail=f"Invalid parameters provided {e}"
+            ) from e
+
         item_collection = await self._search_base(search_request, request=request)
+
+        #######################################################################
+        # Custom Responses
+        #######################################################################
+        output_type: Optional[MimeTypes]
+        if f:
+            output_type = MimeTypes[f]
+        else:
+            accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
+            output_type = accept_media_type(
+                request.headers.get("accept", ""), accepted_media
+            )
 
         # Additional Headers for StreamingResponse
         additional_headers = {}
@@ -720,18 +670,23 @@ class PgSTACClient(CoreCrudClient):
 
         return ItemCollection(**item_collection)
 
+    # NOTE: We can't use `super.post_search(...)` because of the `fields` extension
+    # which, when used, might return a JSONResponse directly instead of a ItemCollection (TypeDict)
     async def post_search(
         self,
         search_request: PgstacSearch,
         request: Request,
         **kwargs,
     ) -> ItemCollection:
+        item_collection = await self._search_base(search_request, request=request)
+
+        #######################################################################
+        # Custom Responses
+        #######################################################################
         accepted_media = [MimeTypes[v] for v in get_args(PostMultiResponseType)]
         output_type = accept_media_type(
             request.headers.get("accept", ""), accepted_media
         )
-
-        item_collection = await self._search_base(search_request, request=request)
 
         # Additional Headers for StreamingResponse
         additional_headers = {}
