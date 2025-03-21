@@ -20,7 +20,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "tipg==0.9.0",
+    "tipg==1.0.1",
     "eoapi.auth-utils>=0.2.0",
     "boto3"
 ]

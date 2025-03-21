@@ -86,11 +86,13 @@ def test_vector_api():
     assert item["id"] == "noaa-emergency-response"
 
     # OGC Tiles
-    resp = httpx.get(f"{vector_endpoint}/collections/public.my_data/tiles/0/0/0")
+    resp = httpx.get(
+        f"{vector_endpoint}/collections/public.my_data/tiles/WebMercatorQuad/0/0/0"
+    )
     assert resp.status_code == 200
 
     resp = httpx.get(
-        f"{vector_endpoint}/collections/pg_temp.pgstac_collections_view/tilejson.json"
+        f"{vector_endpoint}/collections/pg_temp.pgstac_collections_view/tiles/WebMercatorQuad/tilejson.json"
     )
     assert resp.status_code == 200
 

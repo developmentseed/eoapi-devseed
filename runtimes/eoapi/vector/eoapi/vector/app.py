@@ -15,6 +15,7 @@ from tipg.database import close_db_connection, connect_to_db
 from tipg.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from tipg.factory import Endpoints as TiPgEndpoints
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
+from tipg.settings import DatabaseSettings
 
 from . import __version__ as eoapi_vector_version
 from .config import ApiSettings, PostgresSettings
@@ -24,25 +25,18 @@ CUSTOM_SQL_DIRECTORY = resources_files(__package__) / "sql"
 
 settings = ApiSettings()
 auth_settings = OpenIdConnectSettings()
+db_settings = DatabaseSettings(
+    # For the Tables' Catalog we only use the `public` schema
+    schemas=["public"],
+    # We exclude public functions
+    exclude_function_schemas=["public"],
+    # We allow non-spatial tables
+    spatial=False,
+)
+
 
 # Logs
-init_logging(
-    debug=settings.debug,
-    loggers={
-        "botocore.credentials": {
-            "level": "CRITICAL",
-            "propagate": False,
-        },
-        "botocore.utils": {
-            "level": "CRITICAL",
-            "propagate": False,
-        },
-        "rio-tiler": {
-            "level": "ERROR",
-            "propagate": False,
-        },
-    },
-)
+init_logging(debug=settings.debug)
 logger = logging.getLogger(__name__)
 
 
@@ -52,22 +46,14 @@ async def lifespan(app: FastAPI):
     logger.debug("Connecting to db...")
     await connect_to_db(
         app,
-        settings=PostgresSettings(),
         # We enable both pgstac and public schemas (pgstac will be used by custom functions)
         schemas=["pgstac", "public"],
         user_sql_files=list(CUSTOM_SQL_DIRECTORY.glob("*.sql")),  # type: ignore
+        settings=PostgresSettings(),
     )
 
     logger.debug("Registering collection catalog...")
-    await register_collection_catalog(
-        app,
-        # For the Tables' Catalog we only use the `public` schema
-        schemas=["public"],
-        # We exclude public functions
-        exclude_function_schemas=["public"],
-        # We allow non-spatial tables
-        spatial=False,
-    )
+    await register_collection_catalog(app, db_settings=db_settings)
 
     yield
 
@@ -126,9 +112,7 @@ if settings.catalog_ttl:
         CatalogUpdateMiddleware,
         func=register_collection_catalog,
         ttl=settings.catalog_ttl,
-        schemas=["public"],
-        exclude_function_schemas=["public"],
-        spatial=False,
+        db_settings=db_settings,
     )
 
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
@@ -143,7 +127,17 @@ add_exception_handlers(app, DEFAULT_STATUS_CODES)
 )
 def ping():
     """Health check."""
-    return {"ping": "pong!"}
+    from pyproj import __proj_version__ as proj_version  # noqa
+    from pyproj import __version__ as pyproj_version  # noqa
+    from tipg import __version__ as tipg_version  # noqa
+
+    return {
+        "versions": {
+            "tipg": tipg_version,
+            "proj": proj_version,
+            "pyproj": pyproj_version,
+        },
+    }
 
 
 if settings.debug:
@@ -156,16 +150,7 @@ if settings.debug:
     @app.get("/refresh", include_in_schema=False)
     async def refresh(request: Request):
         """Return parsed catalog data for testing."""
-        await register_collection_catalog(
-            request.app,
-            # For the Tables' Catalog we only use the `public` schema
-            schemas=["public"],
-            # We exclude public functions
-            exclude_function_schemas=["public"],
-            # We allow non-spatial tables
-            spatial=False,
-        )
-
+        await register_collection_catalog(request.app, db_settings=db_settings)
         return request.app.state.collection_catalog
 
 
