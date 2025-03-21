@@ -55,7 +55,7 @@
     </div>
     {% endif %}
 
-    {% if response.item_assets.items()|length > 0 %}
+    {% if response.item_assets and response.item_assets.items()|length > 0 %}
     <h2>Item Assets</h2>
     <ul class="list-unstyled">
       {% for key, asset in response.item_assets.items() %}
@@ -70,6 +70,32 @@
           {% endfor %}
         </ul>
         {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    {% if response.renders and response.renders.items()|length > 0 %}
+    <h2>Render Options</h2>
+    <ul class="list-unstyled">
+      {% for key, option in response.renders.items() %}
+      <li class="mb-2">
+        <p class="small text-monospace text-muted mb-0">{{ key }}</p>
+        {% if option.title %}<p class="mb-0"><b>{{ option.title }}</b></p>{% endif %}
+
+        <div class="row">
+          <div class="col-3">assets</div>
+          <div class="col-9">{% for asset in option.assets %}{{ asset }}{% if not loop.last %}, {% endif%}{% endfor %}</div>
+        </div>
+
+        {% for render_key, render_opt in option.items() %}
+        {% if render_key != 'title' and render_key != 'assets' %}
+        <div class="row">
+          <div class="col-3">{{ render_key }}</div>
+          <div class="col-9">{{ render_opt }}</div>
+        </div>
+        {% endif %}
+        {% endfor %}
       </li>
       {% endfor %}
     </ul>
