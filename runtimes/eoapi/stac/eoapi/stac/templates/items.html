@@ -1,4 +1,4 @@
-{% include "header.html" %}
+{% extends "base.html" %}
 
 {% set show_prev_link = false %}
 {% set show_next_link = false %}
@@ -8,13 +8,14 @@
   {% set urlq = url + '?' %}
 {% endif %}
 
-
+{% block content %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-light">
     {% for crumb in crumbs %}
       {% if not loop.last %}
-    <li class="breadcrumb-item"><a href="{{ crumb.url }}/">{{ crumb.part }}</a></li>
-      {% else %}<li class="breadcrumb-item active" aria-current="page">{{ crumb.part }}</li>
+      <li class="breadcrumb-item"><a href="{{ crumb.url }}/">{{ crumb.part }}</a></li>
+      {% else %}
+      <li class="breadcrumb-item active" aria-current="page">{{ crumb.part }}</li>
       {% endif %}
     {% endfor %}
 
@@ -22,111 +23,116 @@
   </ol>
 </nav>
 
-<h1>Collection Items: {{ response.title or response.id }}</h1>
-
-<div id="map" class="rounded" style="width:100%; height:400px;">Loading...</div>
-
-<p>
-  <b>Number of matching items:</b> {{ response.numberMatched }}<br/>
-  <b>Number of returned items:</b> {{ response.numberReturned }}<br/>
-</p>
-
-<div class="form-row" style="margin-bottom:10px;" id="controls">
-  {% for link in response.links %}
-    {% if link.rel == 'previous' %}
-      <div class="col-auto"><a class="btn btn-secondary" title="previous page" href="{{ link.href }}">prev</a></div>
-    {% endif %}
-  {% endfor %}
-  <div class="col-auto">
-    <select class="form-control" id="limit"> <!-- TODO: dynamically populate the values based on oga_max_limit -->
-      <option value="10">page size</option>
-      <option>10</option>
-      <option>100</option>
-      <option>1000</option>
-      <option>10000</option>
-    </select>
+<h1 class="my-4">
+  <span class="d-block text-uppercase text-muted h6 mb-0">Collection Items:</span>
+  {{ response.title or response.id }}
+</h1>
+{% if response.features|length > 0 %}
+<div class="d-flex flex-row align-items-center mb-4">
+  <div class="flex-grow-1">
+    Showing {{ response.numberReturned }} of {{ response.numberMatched }} items
   </div>
-  {% for link in response.links %}
-    {% if link.rel == 'next' %}
-      <div class="col-auto"><a class="btn btn-secondary" title="next page" href="{{ link.href }}">next</a></div>
+  <div class="form-inline ml-auto" style="gap: 10px">
+    <div class="d-flex">
+      <label for="limit">Page size: </label>
+      <select class="form-control form-control-sm ml-1" id="limit" aria-label="Select page size"> <!-- TODO: dynamically populate the values based on oga_max_limit -->
+        <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
+        <option value="25" {% if limit == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+      </select>
+    </div>
+    {% if response.links|length > 0 %}
+    <div class="btn-group btn-group-sm" role="group" aria-label="Paginate">
+      {% for link in response.links %}
+      {% if link.rel == 'prev' or link.rel == 'previous' %}
+        <a class="btn btn-secondary" title="previous page" href="{{ link.href }}">« prev</a>
+      {% endif %}
+      {% endfor %}
+      {% for link in response.links %}
+      {% if link.rel == 'next' %}
+        <a class="btn btn-secondary" title="next page" href="{{ link.href }}">next »</a>
+      {% endif %}
+      {% endfor %}
     {% endif %}
-  {% endfor %}
+    </div>
+  </div>
 </div>
+
+<div id="map" class="rounded mb-2" style="width:100%; height:400px;">Loading...</div>
+
 <div class="table-responsive">
-{% if response.features is defined and response.features|length > 0 %}
-<table class="table">
-  <thead class="thead-light">
-    <th>ID</th>
-{% for key, value in response.features.0.properties.items() %}
-    <th style="font-size: 13px">{{ key }}</th>
-{% endfor %}
-  </thead>
-  <tbody>
-{% for feature in response.features %}
-    <tr style="font-size: 11px">
-      <td><a target="_blank" href="{{ template.api_root }}/collections/{{ feature.collection }}/items/{{ feature.id }}">{{ feature.id }}</a></td>
-  {% for key, value in feature.properties.items() %}
-      <td style="overflow: hidden; text-overflow: ellipsis; max-width: 200px; white-space: nowrap;">{{ value }}</td>
-  {% endfor %}
-    </tr>
-{% endfor %}
-  </tbody>
-</table>
-{% endif %}
+  {% if response.features and response.features|length > 0 %}
+  <table class="table">
+    <thead class="thead-light">
+      <th>ID</th>
+      {% for key, value in response.features.0.properties.items() %}
+      <th style="font-size: 13px">{{ key }}</th>
+      {% endfor %}
+    </thead>
+    <tbody>
+      {% for feature in response.features %}
+      <tr style="font-size: 11px">
+        <td><a target="_blank" href="{{ template.api_root }}/collections/{{ feature.collection }}/items/{{ feature.id }}">{{ feature.id }}</a></td>
+        {% for key, value in feature.properties.items() %}
+        <td style="overflow: hidden; text-overflow: ellipsis; max-width: 200px; white-space: nowrap;">{{ value }}</td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
 </div>
+{% else %}
+<div class="text-center mx-auto py-5 w-50">
+  <p class="h4 mb-3">No items found</p>
+  <p>You need to add STAC Collections and Items; for example by following the <a href="https://github.com/vincentsarago/MAXAR_opendata_to_pgstac">MAXAR open data demo</a> or <a href="https://github.com/developmentseed/eoAPI/tree/main/demo">other demos.</a></p>
+</div>
+{% endif %}
 
 <script>
+  window.addEventListener("load", function () {
+    // Pagination
+    document.getElementById("limit").addEventListener("change", (event) => {
+      // Set new page size
+      const limit = event.target.value;
+      let url = "{{ template.api_root }}/collections/{{ response.id }}/items?";
+      const searchParams = new URLSearchParams(window.location.search);
+      searchParams.set('limit', limit);
+      url += searchParams.toString();
+      window.location.href = url;
+    });
 
+    // Mapping
+    const geojson = {{ response|tojson }};
 
+    const hasGeom = geojson.features && geojson.features.some(feat => feat.geometry);
+    if (hasGeom) {
+      const map = L.map('map').setView([0, 0], 1);
+      map.addLayer(new L.TileLayer(
+        'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 18,
+          attribution: 'Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+        }
+      ));
 
-function changePageSize() {
-  var url = "{{ template.api_root }}/collections/{{ response.features[0].collection }}/items?";
-  const searchParams = new URLSearchParams(window.location.search);
-  searchParams.set('limit', $("#limit").val());
-  url += searchParams.toString();
-  window.location.href = url;
-}
-$(function() {
-  //
-  // mapping
-  //
-  var geojson = {{ response|tojson }};
-
-  var features = (geojson.features) ? geojson.features : [];
-  var hasGeom = features.some(feat => feat.geometry);
-  if (hasGeom) {
-    var map = L.map('map').setView([0, 0], 1);
-    map.addLayer(new L.TileLayer(
-      'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: 'Map data &copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      function addPopup(feature, layer) {
+        const aElm = document.createElement('a');
+        aElm.setAttribute('href', `{{ template.api_root }}/collections/${feature.collection}/items/${feature.id}`);
+        aElm.setAttribute('target', '_blank');
+        aElm.innerText = feature.id;
+        layer.bindPopup(aElm);
       }
-    ));
 
-    function addPopup(feature, layer) {
-      var aElm = document.createElement('a');
-      aElm.setAttribute('href', `{{ template.api_root }}/collections/${feature.collection}/items/${feature.id}`);
-      aElm.setAttribute('target', '_blank');
-      aElm.innerText = feature.id;
-      layer.bindPopup(aElm);
+      const features = L.geoJSON(geojson, {
+        onEachFeature: addPopup,
+        weight: 2
+      }).addTo(map);
+
+      map.fitBounds(features.getBounds());
+    } else {
+      document.getElementById("map").style.display = "none";
     }
-
-    var features = L.geoJSON(geojson, {
-      onEachFeature: addPopup
-    }).addTo(map);
-
-    map.fitBounds(features.getBounds());
-  } else {
-    document.getElementById("map").style.display = "none";
-  }
-
-  //
-  // event handling
-  //
-  $("#limit").on("change", function() {
-    changePageSize();
   });
-});
 </script>
-
-{% include "footer.html" %}
+{% endblock %}
