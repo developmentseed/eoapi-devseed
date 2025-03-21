@@ -43,6 +43,26 @@
     </div>
     {% endif %}
 
+    {% if response.item_assets.items()|length > 0 %}
+    <h2>Item Assets</h2>
+    <ul class="list-unstyled">
+      {% for key, asset in response.item_assets.items() %}
+      <li class="mb-2">
+        <p class="small text-monospace text-muted mb-0">{{ key }}</p>
+        <p class="mb-0"><b>{{ asset.title }}</b></p>
+        <p class="mb-0">{{ asset.type }}</p>
+        {% if asset.roles|length > 0 %}
+        <ul class="list-inline">
+          {% for role in asset.roles %}
+          <li class="list-inline-item badge badge-light">{{ role }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
     <h2>Links</h2>
     <ul>
       {% for link in response.links %}
@@ -89,7 +109,7 @@
         content: '<i class="fa fa-expand"></i>'  // You can customize this icon
       }
     }).setView([0, 0], 1);
-    
+
     var osmLayer = new L.TileLayer(
       'https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
@@ -122,12 +142,12 @@
         map.fitBounds(bbox_polygon.getBounds());
       }
     }
-    
+
     // Add any tilejson links as layers to the map
     const tileJsonLinks = collection.links.filter(link => link.rel === "tiles");
-    
+
     const overlayLayers = {};
-    
+
     if (tileJsonLinks.length > 0) {
       tileJsonLinks.forEach((link, index) => {
         fetch(link.href)
@@ -139,22 +159,22 @@
               minZoom: tileJson.minzoom || 0,
               maxZoom: tileJson.maxzoom || 18
             });
-            
+
             const layerName = link.title || `TileJSON Layer ${index + 1}`;
             overlayLayers[layerName] = tileLayer;
-            
+
             // Add the first layer to the map by default
             if (index === 0) {
               tileLayer.addTo(map);
             }
-            
+
             // Add layer control after all layers are processed
             if (index === tileJsonLinks.length - 1) {
               // Define the base layers
               const baseLayers = {
                 "OpenStreetMap": osmLayer
               };
-              
+
               // Add the layer control to the map
               L.control.layers(baseLayers, overlayLayers).addTo(map);
             }
@@ -164,7 +184,7 @@
           });
       });
     }
-    
+
     // Handle fullscreen change event to resize map
     map.on('fullscreenchange', function() {
       if (map.isFullscreen()) {
