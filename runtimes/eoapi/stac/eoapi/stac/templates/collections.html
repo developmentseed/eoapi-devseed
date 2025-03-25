@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+{% if params %}
+  {% set urlq = url + '?' + params + '&' %}
+  {% else %}
+  {% set urlq = url + '?' %}
+{% endif %}
+
 {% block content %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-light">
@@ -24,7 +30,7 @@
 {% else %}
 <div class="d-flex flex-row align-items-center mb-4 flex-wrap">
   <div class="mr-3">
-    Showing {{ offset + 1 }} - {{ offset + response.numberReturned }} of {{ response.numberMatched }} collections
+    Showing {{ template.params.get("offset", 0)|int + 1 }} - {{ template.params.get("offset", 0)|int + response.numberReturned }} of {{ response.numberMatched }} collections
   </div>
 
   <form id="search-form" class="d-flex flex-wrap flex-grow-1" style="gap: 8px">
@@ -43,10 +49,10 @@
     <div class="d-flex">
       <label for="limit" class="mr-1 small">Page size:</label>
       <select class="form-control form-control-sm" id="limit" aria-label="Select page size" style="width: 70px">
-        <option value="10" {% if limit == 10 %}selected{% endif %}>10</option>
-        <option value="25" {% if limit == 25 %}selected{% endif %}>25</option>
-        <option value="50" {% if limit == 50 %}selected{% endif %}>50</option>
-        <option value="100" {% if limit == 100 %}selected{% endif %}>100</option>
+        <option value="10" {% if template.params.get("limit", 10)|int == 10 %}selected{% endif %}>10</option>
+        <option value="25" {% if template.params.get("limit", 10)|int == 25 %}selected{% endif %}>25</option>
+        <option value="50" {% if template.params.get("limit", 10)|int == 50 %}selected{% endif %}>50</option>
+        <option value="100" {% if template.params.get("limit", 10)|int == 100 %}selected{% endif %}>100</option>
       </select>
     </div>
 
