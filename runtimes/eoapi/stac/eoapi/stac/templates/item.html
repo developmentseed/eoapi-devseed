@@ -71,7 +71,7 @@
 
         <details class="mt-2">
           <summary>Asset Properties</summary>
-          {% for asset_key, asset_opt in asset | dictsort if asset_key not in ["title", "type", "href", "roles", "alternate"] %}
+          {% for asset_key, asset_opt in asset | dictsort if asset_key not in ["title", "type", "description", "href", "roles", "alternate"] %}
           <div class="row mb-1 small">
             <div class="col-3 font-weight-bold">{{ asset_key }}</div>
             <div class="col-9">
