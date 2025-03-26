@@ -1,10 +1,12 @@
-{% include "header.html" %}
+{% extends "base.html" %}
+
 {% if params %}
   {% set urlq = url + '?' + params + '&' %}
   {% else %}
   {% set urlq = url + '?' %}
 {% endif %}
 
+{% block content %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-light">
     {% for crumb in crumbs %}
@@ -158,5 +160,4 @@
   }
 
 </script>
-
-{% include "footer.html" %}
+{% endblock %}
