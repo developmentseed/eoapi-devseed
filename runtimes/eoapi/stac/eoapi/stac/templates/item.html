@@ -28,12 +28,53 @@
     <h2>Properties</h2>
     <ul>
       <li><strong>ID:</strong> {{ response.id }}</li>
-      {% for key, value in response.properties.items() %}
+      {% for key, value in response.properties | dictsort %}
       <li><strong>{{ key }}:</strong> {{ value }}</li>
       {% endfor %}
     </ul>
 
-    <h2>Links</h2>
+    <h2 class="mt-5">Assets</h2>
+    <ul class="list-unstyled">
+      {% for key, asset in response.assets.items() %}
+      <li class="mb-4">
+        <p class="small text-monospace text-muted mb-0">{{ key }}</p>
+        {% if asset.title %}<p class="mb-0"><b>{{ asset.title }}</b></p>{% endif %}
+        {% if asset.type %}<p class="mb-0">{{ asset.type }}</p>{% endif %}
+        {% if asset.description %}<p class="mb-0">{{ asset.description }}</p>{% endif %}
+        <ul class="list-inline">
+          <li class="list-inline-item"><a href="{{ asset.href }}">Asset link</a></li>
+          {% if asset.alternate %}
+          {% for alternate_key, alternate_link in asset.alternate.items() %}
+          <li class="list-inline-item"><a href="{{ alternate_link.href }}">{{ alternate_link.title or alternate_key }}</a></li>
+          {% endfor %}
+          {% endif %}
+        </ul>
+        {% if asset.roles and asset.roles|length > 0 %}
+        <ul class="list-inline">
+          {% for role in asset.roles %}
+          <li class="list-inline-item badge badge-light">{{ role }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        <details class="mt-2">
+          <summary>Asset Properties</summary>
+          {% for asset_key, asset_opt in asset | dictsort if asset_key not in ["title", "type", "href", "roles", "alternate"] %}
+          <div class="row mt-2 small">
+            <div class="col-3">{{ asset_key }}</div>
+            <div class="col-9">
+              <pre>{{ asset_opt | tojson(2) }}</pre>
+            </div>
+          </div>
+          {% else %}
+          No additional properties for this asset.
+          {% endfor %}
+        </details>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <h2 class="mt-5">Links</h2>
     <ul>
       {% for link in response.links %}
       <li><a href="{{ link.href }}">{{ link.title or link.rel }}</a></li>
