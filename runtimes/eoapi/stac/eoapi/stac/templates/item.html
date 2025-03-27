@@ -1,10 +1,12 @@
-{% include "header.html" %}
+{% extends "base.html" %}
+
 {% if params %}
   {% set urlq = url + '?' + params + '&' %}
   {% else %}
   {% set urlq = url + '?' %}
 {% endif %}
 
+{% block content %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-light">
     {% for crumb in crumbs %}
@@ -18,20 +20,83 @@
   </ol>
 </nav>
 
-<h1>Collection Item: {{ response.id }}</h1>
+<h1 class="my-4">
+  <span class="d-block text-uppercase text-muted h6 mb-0">Collection Item:</span>
+  {{ response.id }}
+</h1>
 
 <div class="row">
-  <div class="col-sm">
+  <div class="col-md-7">
     <h2>Properties</h2>
+    <ul class="list-unstyled">
+      <li class="row small mb-1">
+        <div class="col-3 font-weight-bold">ID</div>
+        <div class="col-9">
+          <pre class="mb-0">{{ response.id }}</pre>
+        </div>
+      </li>
+      {% for key, value in response.properties | dictsort %}
+      <li class="row small mb-1">
+        <div class="col-3 font-weight-bold">{{ key }}</div>
+        <div class="col-9">
+          <pre class="mb-0">{{ value | tojson(2) | trim('"') }}</pre>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <h2 class="mt-5">Assets</h2>
+    <ul class="list-unstyled">
+      {% for key, asset in response.assets.items() %}
+      <li class="mb-4">
+        <p class="mb-0 font-weight-bold ">
+          <span class="text-muted text-monospace">{{ key }}</span>
+          {% if asset.title and not key == asset.title %} &bull; {{ asset.title }}{% endif %}
+        </p>
+        {% if asset.type %}<p class="mb-0">{{ asset.type }}</p>{% endif %}
+        {% if asset.description %}<p class="mb-0">{{ asset.description }}</p>{% endif %}
+        <ul class="list-inline">
+          <li class="list-inline-item"><a href="{{ asset.href }}">Asset link</a></li>
+          {% if asset.alternate %}
+          {% for alternate_key, alternate_link in asset.alternate.items() %}
+          <li class="list-inline-item"><a href="{{ alternate_link.href }}">{{ alternate_link.title or alternate_key }}</a></li>
+          {% endfor %}
+          {% endif %}
+        </ul>
+        {% if asset.roles and asset.roles|length > 0 %}
+        <ul class="list-inline">
+          {% for role in asset.roles %}
+          <li class="list-inline-item badge badge-light">{{ role }}</li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+
+        <details class="mt-2">
+          <summary>Asset Properties</summary>
+          {% for asset_key, asset_opt in asset | dictsort if asset_key not in ["title", "type", "description", "href", "roles", "alternate"] %}
+          <div class="row mb-1 small">
+            <div class="col-3 font-weight-bold">{{ asset_key }}</div>
+            <div class="col-9">
+              <pre class="mb-0">{{ asset_opt | tojson(2) }}</pre>
+            </div>
+          </div>
+          {% else %}
+          No additional properties for this asset.
+          {% endfor %}
+        </details>
+      </li>
+      {% endfor %}
+    </ul>
+
+    <h2 class="mt-5">Links</h2>
     <ul>
-      <li><strong>ID:</strong> {{ response.id }}</li>
-      {% for key, value in response.properties.items() %}
-      <li><strong>{{ key }}:</strong> {{ value }}</li>
+      {% for link in response.links %}
+      <li><a href="{{ link.href }}">{{ link.title or link.rel }}</a></li>
       {% endfor %}
     </ul>
   </div>
-  <div class="col-sm">
-    <div id="map" class="rounded" style="width:100%;height:400px;">Loading...</div>
+  <div class="col-md-5">
+    <div id="map" class="rounded" style="width:100%; height:calc(-6rem + 100vh); position: sticky; top: 5rem;">Loading...</div>
   </div>
 </div>
 
@@ -97,5 +162,4 @@
   }
 
 </script>
-
-{% include "footer.html" %}
+{% endblock %}
