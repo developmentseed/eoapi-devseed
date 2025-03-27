@@ -49,8 +49,10 @@
     <ul class="list-unstyled">
       {% for key, asset in response.assets.items() %}
       <li class="mb-4">
-        <p class="small text-monospace text-muted mb-0">{{ key }}</p>
-        {% if asset.title %}<p class="mb-0"><b>{{ asset.title }}</b></p>{% endif %}
+        <p class="mb-0 font-weight-bold ">
+          <span class="text-muted text-monospace">{{ key }}</span>
+          {% if asset.title and not key == asset.title %} &bull; {{ asset.title }}{% endif %}
+        </p>
         {% if asset.type %}<p class="mb-0">{{ asset.type }}</p>{% endif %}
         {% if asset.description %}<p class="mb-0">{{ asset.description }}</p>{% endif %}
         <ul class="list-inline">
