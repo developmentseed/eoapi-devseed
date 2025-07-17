@@ -59,17 +59,42 @@
     <h2>Item Assets</h2>
     <ul class="list-unstyled">
       {% for key, asset in response.item_assets.items() %}
-      <li class="mb-2">
-        <p class="small text-monospace text-muted mb-0">{{ key }}</p>
-        <p class="mb-0"><b>{{ asset.title }}</b></p>
-        <p class="mb-0">{{ asset.type }}</p>
-        {% if asset.roles|length > 0 %}
+      <li class="mb-4">
+        <p class="mb-0 font-weight-bold ">
+          <span class="text-muted text-monospace">{{ key }}</span>
+          {% if asset.title and not key == asset.title %} &bull; {{ asset.title }}{% endif %}
+        </p>
+        {% if asset.type %}<p class="mb-0">{{ asset.type }}</p>{% endif %}
+        {% if asset.description %}<p class="mb-0">{{ asset.description }}</p>{% endif %}
+        <ul class="list-inline">
+          <li class="list-inline-item"><a href="{{ asset.href }}">Asset link</a></li>
+          {% if asset.alternate %}
+          {% for alternate_key, alternate_link in asset.alternate.items() %}
+          <li class="list-inline-item"><a href="{{ alternate_link.href }}">{{ alternate_link.title or alternate_key }}</a></li>
+          {% endfor %}
+          {% endif %}
+        </ul>
+        {% if asset.roles and asset.roles|length > 0 %}
         <ul class="list-inline">
           {% for role in asset.roles %}
           <li class="list-inline-item badge badge-light">{{ role }}</li>
           {% endfor %}
         </ul>
         {% endif %}
+
+        <details class="mt-2">
+          <summary>Asset Properties</summary>
+          {% for asset_key, asset_opt in asset | dictsort if asset_key not in ["title", "type", "description", "href", "roles", "alternate"] %}
+          <div class="row mb-1 small">
+            <div class="col-3 font-weight-bold">{{ asset_key }}</div>
+            <div class="col-9">
+              <pre class="mb-0">{{ asset_opt | tojson(2) | trim('"') }}</pre>
+            </div>
+          </div>
+          {% else %}
+          No additional properties for this asset.
+          {% endfor %}
+        </details>
       </li>
       {% endfor %}
     </ul>
@@ -77,7 +102,7 @@
 
     {% if response.renders and response.renders.items()|length > 0 %}
     <h2>Render Options</h2>
-    <ul class="list-unstyled">
+    <ul class="list-unstyled small">
       {% for key, option in response.renders.items() %}
       <li class="mb-2">
         <p class="small text-monospace text-muted mb-0">{{ key }}</p>
@@ -85,14 +110,18 @@
 
         <div class="row">
           <div class="col-3">assets</div>
-          <div class="col-9">{% for asset in option.assets %}{{ asset }}{% if not loop.last %}, {% endif%}{% endfor %}</div>
+          <div class="col-9">
+            <pre class="mb-0">{% for asset in option.assets %}{{ asset }}{% if not loop.last %}, {% endif%}{% endfor %}</pre>
+          </div>
         </div>
 
         {% for render_key, render_opt in option.items() %}
         {% if render_key != 'title' and render_key != 'assets' %}
         <div class="row">
           <div class="col-3">{{ render_key }}</div>
-          <div class="col-9">{{ render_opt }}</div>
+          <div class="col-9">
+            <pre class="mb-0">{{ render_opt | tojson(2) | trim('"') }}</pre>
+          </div>
         </div>
         {% endif %}
         {% endfor %}
@@ -110,9 +139,7 @@
   </div>
   <div class="col-md-5">
     {% if response.extent and response.extent.spatial %}
-    <div id="map" class="rounded" style="width: 100%; height: 400px">
-      Loading...
-    </div>
+    <div id="map" class="rounded" style="width:100%; height:calc(-6rem + 100vh); position: sticky; top: 5rem;">Loading...</div>
     {% endif %}
   </div>
 </div>
