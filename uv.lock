@@ -285,7 +285,7 @@ dev = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pre-commit", specifier = ">=4.1.0" },
     { name = "psycopg", extras = ["pool"], specifier = ">=3.2.4" },
-    { name = "pypgstac", specifier = "==0.9.7" },
+    { name = "pypgstac", specifier = "==0.9.8" },
     { name = "pytest", specifier = ">=8.3.4" },
 ]
 load = [
@@ -687,7 +687,7 @@ yaml = [
 
 [[package]]
 name = "pypgstac"
-version = "0.9.7"
+version = "0.9.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -701,9 +701,9 @@ dependencies = [
     { name = "tenacity" },
     { name = "version-parser" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/9a/cac22cef9e2f385985b04ef824492fd1818c14d9698ac0e4d452252bcbb3/pypgstac-0.9.7.tar.gz", hash = "sha256:f8576b29fd35103c695fb5958f34466366e20e5a6dc21570b786c2d223ff0f48", size = 1444133, upload-time = "2025-07-17T19:26:39.215Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/dd/a6f115bf82148b844e4c6deafa093fb8b4484d6e29b4fada2003b125f7de/pypgstac-0.9.8.tar.gz", hash = "sha256:173fef7af4f069effa00478ae5578cd311fc8f990683a32b95f6b12f485ceeff", size = 1476341, upload-time = "2025-08-04T21:17:42.801Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/41/058af6f7ee039bc43ac2275ce9520be863d61a18f2dac748fc8d80d5e8e3/pypgstac-0.9.7-py3-none-any.whl", hash = "sha256:50c54bffec6b5dba722c280c52d8a796852a42f5dac82305a3ce026166e4b065", size = 1606114, upload-time = "2025-07-17T19:26:37.028Z" },
+    { url = "https://files.pythonhosted.org/packages/67/d1/32f1f533a8345110d090c688d3b4c08f7272b9a9e283e63fdac47d57adb9/pypgstac-0.9.8-py3-none-any.whl", hash = "sha256:b2ff10ee81924d7919761d8e6437f69d101d4f0386037a0e6f65a5e30506245c", size = 1642158, upload-time = "2025-08-04T21:17:40.916Z" },
 ]
 
 [[package]]
