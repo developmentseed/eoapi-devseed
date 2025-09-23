@@ -6,11 +6,11 @@ from contextlib import asynccontextmanager
 import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
 from stac_fastapi.api.models import (
     CollectionUri,
     ItemCollectionUri,
     ItemUri,
+    JSONResponse,
     create_get_request_model,
     create_post_request_model,
     create_request_model,
@@ -82,7 +82,7 @@ if settings.enable_transaction:
         TransactionExtension(
             client=TransactionsClient(),
             settings=settings,
-            response_class=ORJSONResponse,
+            response_class=JSONResponse,
         )
     )
     application_extensions.append(
@@ -220,7 +220,7 @@ api = StacApi(
     collections_get_request_model=collections_get_model,
     search_get_request_model=search_get_model,
     search_post_request_model=search_post_model,
-    response_class=ORJSONResponse,
+    response_class=JSONResponse,
     middlewares=middlewares,
 )
 app = api.app
