@@ -547,7 +547,7 @@ class PgSTACClient(CoreCrudClient):
             if fields.include or fields.exclude:
                 return JSONResponse(item_collection)  # type: ignore
 
-        return ItemCollection(**item_collection)
+        return item_collection
 
     # NOTE: We can't use `super.get_search(...)` because of the `fields` extension
     # which, when used, might return a JSONResponse directly instead of a ItemCollection (TypeDict)
@@ -657,7 +657,7 @@ class PgSTACClient(CoreCrudClient):
             if fields.include or fields.exclude:
                 return JSONResponse(item_collection)  # type: ignore
 
-        return ItemCollection(**item_collection)
+        return item_collection
 
     # NOTE: We can't use `super.post_search(...)` because of the `fields` extension
     # which, when used, might return a JSONResponse directly instead of a ItemCollection (TypeDict)
@@ -717,4 +717,4 @@ class PgSTACClient(CoreCrudClient):
             if fields.include or fields.exclude:
                 return JSONResponse(item_collection)  # type: ignore
 
-        return ItemCollection(**item_collection)
+        return item_collection
