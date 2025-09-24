@@ -56,11 +56,12 @@ from .extensions import (
 from .logs import init_logging
 
 jinja2_env = jinja2.Environment(
+    autoescape=jinja2.select_autoescape(["html", "xml"]),
     loader=jinja2.ChoiceLoader(
         [
             jinja2.PackageLoader(__package__, "templates"),
         ]
-    )
+    ),
 )
 templates = Jinja2Templates(env=jinja2_env)
 
