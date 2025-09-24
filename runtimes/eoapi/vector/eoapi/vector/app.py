@@ -15,6 +15,7 @@ from tipg.database import close_db_connection, connect_to_db
 from tipg.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from tipg.factory import Endpoints as TiPgEndpoints
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
+from tipg.openapi import _update_openapi
 from tipg.settings import DatabaseSettings
 
 from . import __version__ as eoapi_vector_version
@@ -74,6 +75,9 @@ app = FastAPI(
         "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
     },
 )
+
+# Fix OpenAPI response header for OGC Common compatibility
+_update_openapi(app)
 
 # add eoapi_vector templates and tipg templates
 jinja2_env = jinja2.Environment(
