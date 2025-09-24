@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>{{ template.title }}</title>
+    <title>eoAPI Vector - Map Viewer</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.3/css/bootstrap.min.css" />
@@ -17,6 +17,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://files.dnr.state.mn.us/lib/bootstrap4/javascripts/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <script src="https://unpkg.com/protomaps-leaflet@4.0.1/dist/protomaps-leaflet.js"></script>
+    <script src="https://unpkg.com/proj4@2.3.14/dist/proj4.js"></script>
+    <script src="https://unpkg.com/proj4leaflet@1.0.2/src/proj4leaflet.js"></script>
   </head>
   <body>
     <nav class="navbar navbar-expand-md navbar-light fixed-top bg-light">
@@ -34,7 +37,6 @@
               <a class="dropdown-item" href="{{ template.api_root }}/">Home</a>
               <a class="dropdown-item" href="{{ template.api_root }}/conformance">Conformance</a>
               <a class="dropdown-item" href="{{ template.api_root }}/collections">Collections</a>
-              <a class="dropdown-item" href="{{ template.api_root }}/api.html">API Documentation</a>
             </div>
           </li>
         </ul>
@@ -42,3 +44,110 @@
     </nav>
 
     <main role="main" class="container-fluid">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-light">
+          {% for crumb in crumbs %}
+            {% if not loop.last %}
+          <li class="breadcrumb-item"><a href="{{ crumb.url }}/">{{ crumb.part }}</a></li>
+            {% else %}<li class="breadcrumb-item active" aria-current="page">{{ crumb.part }}</li>
+            {% endif %}
+          {% endfor %}
+
+        </ol>
+      </nav>
+
+      <h1>Collection  {{ response.title }}</h1>
+      <div id="map" class="rounded" style="width:100%; min-height: 75vh;"></div>
+
+<script type="text/javascript">
+
+var crs = new L.Proj.CRS(
+    '{{ response.tms.crs.srs }}',
+    '{{ response.tms.crs.to_proj4() }}', {
+    origin: [{{ response.tms.xy_bbox.left }}, {{ response.tms.xy_bbox.top }}],
+    bounds: L.bounds(
+      L.Point({{ response.tms.xy_bbox.left}}, {{ response.tms.xy_bbox.bottom }}),
+      L.Point({{ response.tms.xy_bbox.right}}, {{ response.tms.xy_bbox.top }})
+    ),
+    resolutions: {{ response.resolutions|safe }},
+  }
+);
+
+var map = L.map('map', {
+  crs: crs,
+  center: [0, 0],
+  zoom: 2,
+  minZoom: {{ response.tms.minzoom }},
+  maxZoom: {{ response.tms.maxzoom }},
+  attributionControl: false
+});
+
+L.control.attribution({prefix: '<a href="https://leafletjs.com" target="_blank">Leaflet</a> | <a href="https://eoapi.dev" target="_blank">eoAPI</a>'}).addTo(map)
+
+if ("{{ response.tms.id }}" === "WebMercatorQuad") {
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+}
+
+const bboxPolygon = (bounds) => {
+    var LL_EPSILON = 1e-6
+    return {
+        'type': 'Feature',
+        'geometry': {
+            'type': 'Polygon',
+            'coordinates': [[
+                [bounds[0] + LL_EPSILON, bounds[1] + LL_EPSILON],
+                [bounds[2] -  LL_EPSILON, bounds[1] + LL_EPSILON],
+                [bounds[2] - LL_EPSILON, bounds[3] - LL_EPSILON],
+                [bounds[0] + LL_EPSILON, bounds[3] - LL_EPSILON],
+                [bounds[0] + LL_EPSILON, bounds[1] + LL_EPSILON]
+            ]]
+        },
+        'properties': {}
+    }
+}
+
+fetch('{{ response.tilejson_endpoint|safe }}')
+  .then(res => {
+    if (res.ok) return res.json()
+    throw new Error('Network response was not ok.')
+  })
+  .then(data => {
+    console.log(data)
+
+  let bounds = [...data.bounds]
+    bounds = [
+      Math.max(bounds[0], {{ response.tms.bbox.left }}),
+      Math.max(bounds[1], {{ response.tms.bbox.bottom }}),
+      Math.min(bounds[2], {{ response.tms.bbox.right }}),
+      Math.min(bounds[3], {{ response.tms.bbox.top }})
+    ];
+    let geo = {
+      "type": "FeatureCollection",
+      "features": [bboxPolygon(bounds)]
+    }
+
+    map.fitBounds(L.geoJSON(geo).getBounds());
+
+    let layer = Object.values(data.vector_layers)[0];
+    let paintRules = [
+        {
+            dataLayer: layer.id,
+            symbolizer: new protomapsL.LineSymbolizer({
+                color:"#000000"
+            }),
+            minzoom: layer.minzoom,
+            maxzoom: layer.maxzoom
+        }
+    ]
+
+    protomapsL.leafletLayer({url:data.tiles[0], paintRules:paintRules}).addTo(map);
+  })
+  .catch(err => {
+    console.warn(err)
+  })
+
+</script>
+
+{% include "footer.html" %}

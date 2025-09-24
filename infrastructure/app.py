@@ -175,12 +175,12 @@ class eoAPIStack(Stack):
                     path=os.path.abspath(context_dir),
                     file="infrastructure/dockerfiles/Dockerfile.raster",
                     build_args={
-                        "PYTHON_VERSION": "3.11",
+                        "PYTHON_VERSION": "3.12",
                     },
                     platform="linux/amd64",
                 ),
                 "handler": "handler.handler",
-                "runtime": aws_lambda.Runtime.PYTHON_3_11,
+                "runtime": aws_lambda.Runtime.PYTHON_3_12,
             },
         )
 
@@ -224,12 +224,12 @@ class eoAPIStack(Stack):
                     path=os.path.abspath(context_dir),
                     file="infrastructure/dockerfiles/Dockerfile.stac",
                     build_args={
-                        "PYTHON_VERSION": "3.11",
+                        "PYTHON_VERSION": "3.12",
                     },
                     platform="linux/amd64",
                 ),
                 "handler": "handler.handler",
-                "runtime": aws_lambda.Runtime.PYTHON_3_11,
+                "runtime": aws_lambda.Runtime.PYTHON_3_12,
             },
         )
 
@@ -271,12 +271,12 @@ class eoAPIStack(Stack):
                     path=os.path.abspath(context_dir),
                     file="infrastructure/dockerfiles/Dockerfile.vector",
                     build_args={
-                        "PYTHON_VERSION": "3.11",
+                        "PYTHON_VERSION": "3.12",
                     },
                     platform="linux/amd64",
                 ),
                 "handler": "handler.handler",
-                "runtime": aws_lambda.Runtime.PYTHON_3_11,
+                "runtime": aws_lambda.Runtime.PYTHON_3_12,
             },
         )
 

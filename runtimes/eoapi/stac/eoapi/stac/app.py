@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 from stac_fastapi.api.models import (
     CollectionUri,
     ItemCollectionUri,
@@ -173,7 +173,11 @@ item_get_model = create_request_model(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """FastAPI Lifespan."""
-    await connect_to_db(app, postgres_settings=pg_settings)
+    await connect_to_db(
+        app,
+        postgres_settings=pg_settings,
+        add_write_connection_pool=settings.enable_transaction,
+    )
     yield
     await close_db_connection(app)
 
@@ -197,6 +201,7 @@ api = StacApi(
         description=settings.stac_fastapi_description,
         version=eoapi_devseed_version,
         lifespan=lifespan,
+        root_path=settings.root_path,
         openapi_url=settings.openapi_url,
         docs_url=settings.docs_url,
         redoc_url=None,
@@ -205,6 +210,7 @@ api = StacApi(
             "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
         },
     ),
+    router=APIRouter(prefix=settings.prefix_path),
     api_version=eoapi_devseed_version,
     settings=settings,
     extensions=application_extensions,

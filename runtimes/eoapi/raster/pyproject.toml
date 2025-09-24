@@ -2,7 +2,7 @@
 name = "eoapi.raster"
 description = "Raster service for eoAPI."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     {name = "Vincent Sarago", email = "vincent@developmentseed.com"},
 ]
@@ -11,7 +11,6 @@ classifiers = [
     "Intended Audience :: Information Technology",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -20,10 +19,9 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "titiler.pgstac==1.7.1",
-    "titiler.extensions",
-    "starlette-cramjam>=0.4,<0.5",
-    "importlib_resources>=1.1.0;python_version<'3.9'",
+    "titiler.pgstac==1.9.0",
+    "titiler.extensions==0.24.0",
+    "starlette-cramjam>=0.4,<0.6",
     "boto3",
     "eoapi.auth-utils>=0.2.0",
 ]

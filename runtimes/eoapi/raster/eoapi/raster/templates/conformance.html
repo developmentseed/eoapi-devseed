@@ -18,15 +18,14 @@
   </ol>
 </nav>
 
-<h1>{{ response.title }}</h1>
-<p>
-  {{ response.description }}
-</p>
+<h1>{{ template.title }}</h1>
+
+<p>This API implements the conformance classes from standards and community specifications that are listed below.</p>
 
 <h2>Links</h2>
 <ul>
-{% for link in response.links %}
-  <li> <a href="{{ link.href }}">{{ link.title or link.rel }}</a></li>
+{% for url in response.conformsTo %}
+  <li> <a target="_blank" href="{{ url }}">{{ url }}</a></li>
 {% endfor %}
 </ul>
 

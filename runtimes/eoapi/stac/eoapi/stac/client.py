@@ -221,13 +221,13 @@ class FiltersClient(PgSTACFiltersClient):
             request, collection_id, *args, **kwargs
         )
 
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(QueryablesResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.jsonschema
             )
 
         if output_type == MimeTypes.html:
@@ -252,7 +252,7 @@ def add_render_links(collection: Collection, titiler_endpoint: str) -> Collectio
                     "rel": Relations.preview.value,
                     "title": f"{render} interactive map",
                     "type": MimeTypes.html.value,
-                    "href": f"{base_url}/map?{query_params}",
+                    "href": f"{base_url}/map.html?{query_params}",
                 }
             )
             collection["links"].append(
@@ -288,13 +288,13 @@ class PgSTACClient(CoreCrudClient):
 
         landing = await super().landing_page(**kwargs)
 
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(ResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.json
             )
 
         if output_type == MimeTypes.html:
@@ -322,13 +322,13 @@ class PgSTACClient(CoreCrudClient):
         """
         conforms_to = Conformance(conformsTo=self.conformance_classes())
 
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(ResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.json
             )
 
         if output_type == MimeTypes.html:
@@ -352,13 +352,13 @@ class PgSTACClient(CoreCrudClient):
             for collection in collections["collections"]:
                 collection = add_render_links(collection, titiler_endpoint)
 
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(ResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.json
             )
 
         if output_type == MimeTypes.html:
@@ -386,13 +386,13 @@ class PgSTACClient(CoreCrudClient):
         if titiler_endpoint := request.app.state.settings.titiler_endpoint:
             collection = add_render_links(collection, titiler_endpoint)
 
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(ResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.json
             )
 
         if output_type == MimeTypes.html:
@@ -415,13 +415,13 @@ class PgSTACClient(CoreCrudClient):
     ) -> Item:
         item = await super().get_item(item_id, collection_id, request, **kwargs)
 
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(GeoResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.geojson
             )
 
         if output_type == MimeTypes.html:
@@ -469,6 +469,7 @@ class PgSTACClient(CoreCrudClient):
             filter_lang=filter_lang,
             fields=fields,
             sortby=sortby,
+            **kwargs,
         )
 
         try:
@@ -486,13 +487,13 @@ class PgSTACClient(CoreCrudClient):
         #######################################################################
         # Custom Responses
         #######################################################################
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.geojson
             )
 
         # Additional Headers for StreamingResponse
@@ -587,6 +588,7 @@ class PgSTACClient(CoreCrudClient):
             sortby=sortby,
             filter_query=filter_expr,
             filter_lang=filter_lang,
+            **kwargs,
         )
 
         try:
@@ -601,13 +603,13 @@ class PgSTACClient(CoreCrudClient):
         #######################################################################
         # Custom Responses
         #######################################################################
-        output_type: Optional[MimeTypes]
         if f:
             output_type = MimeTypes[f]
         else:
             accepted_media = [MimeTypes[v] for v in get_args(GeoMultiResponseType)]
-            output_type = accept_media_type(
-                request.headers.get("accept", ""), accepted_media
+            output_type = (
+                accept_media_type(request.headers.get("accept", ""), accepted_media)
+                or MimeTypes.geojson
             )
 
         # Additional Headers for StreamingResponse

@@ -1,9 +1,8 @@
 """eoAPI Raster application."""
 
 import logging
-import re
 from contextlib import asynccontextmanager
-from typing import Dict
+from typing import Annotated, Dict, Literal, Optional
 
 import jinja2
 import pystac
@@ -28,6 +27,9 @@ from titiler.core.factory import (
     TMSFactory,
 )
 from titiler.core.middleware import CacheControlMiddleware
+from titiler.core.models.OGC import Conformance, Landing
+from titiler.core.resources.enums import MediaType
+from titiler.core.utils import accept_media_type, create_html_response, update_openapi
 from titiler.extensions import cogViewerExtension
 from titiler.mosaic.errors import MOSAIC_STATUS_CODES
 from titiler.pgstac import __version__ as titiler_pgstac_version
@@ -77,11 +79,13 @@ logger = logging.getLogger(__name__)
 
 logger.debug("Loading jinja2 templates...")
 jinja2_env = jinja2.Environment(
+    autoescape=jinja2.select_autoescape(["html", "xml"]),
     loader=jinja2.ChoiceLoader(
         [
             jinja2.PackageLoader(__package__, "templates"),
+            jinja2.PackageLoader("titiler.core", "templates"),
         ]
-    )
+    ),
 )
 templates = Jinja2Templates(env=jinja2_env)
 
@@ -112,6 +116,10 @@ app = FastAPI(
         "usePkceWithAuthorizationCodeGrant": auth_settings.use_pkce,
     },
 )
+
+# Fix OpenAPI response header for OGC Common compatibility
+update_openapi(app)
+
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
 add_exception_handlers(app, MOSAIC_STATUS_CODES)
 
@@ -140,6 +148,14 @@ app.add_middleware(
     },
 )
 
+TITILER_CONFORMS_TO = {
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/core",
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/landing-page",
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/oas30",
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/html",
+    "http://www.opengis.net/spec/ogcapi-common-1/1.0/conf/json",
+}
+
 
 ###############################################################################
 # `Secret` endpoint for mosaic builder. Do not need to be public (in the OpenAPI docs)
@@ -164,6 +180,7 @@ searches = MosaicTilerFactory(
     extensions=[
         searchInfoExtension(),
     ],
+    templates=templates,
 )
 app.include_router(
     searches.router, tags=["STAC Search"], prefix="/searches/{search_id}"
@@ -176,16 +193,16 @@ add_search_register_route(
         searches.layer_dependency,
         searches.dataset_dependency,
         searches.pixel_selection_dependency,
-        searches.tile_dependency,
         searches.process_dependency,
         searches.render_dependency,
-        searches.pgstac_dependency,
+        searches.assets_accessor_dependency,
         searches.reader_dependency,
         searches.backend_dependency,
     ],
     tags=["STAC Search"],
 )
 add_search_list_route(app, prefix="/searches", tags=["STAC Search"])
+TITILER_CONFORMS_TO.update(searches.conforms_to)
 
 
 @app.get("/searches/builder", response_class=HTMLResponse, tags=["STAC Search"])
@@ -218,11 +235,12 @@ collection = MosaicTilerFactory(
     extensions=[
         searchInfoExtension(),
     ],
+    templates=templates,
 )
 app.include_router(
     collection.router, tags=["STAC Collection"], prefix="/collections/{collection_id}"
 )
-
+TITILER_CONFORMS_TO.update(collection.conforms_to)
 
 ###############################################################################
 # STAC Item Endpoints
@@ -231,11 +249,7 @@ stac = MultiBaseTilerFactory(
     path_dependency=ItemIdParams,
     router_prefix="/collections/{collection_id}/items/{item_id}",
     add_viewer=True,
-)
-app.include_router(
-    stac.router,
-    tags=["STAC Item"],
-    prefix="/collections/{collection_id}/items/{item_id}",
+    templates=templates,
 )
 
 
@@ -260,6 +274,7 @@ app.include_router(
     tags=["STAC Item"],
     prefix="/collections/{collection_id}/items/{item_id}",
 )
+TITILER_CONFORMS_TO.update(stac.conforms_to)
 
 
 ###############################################################################
@@ -268,12 +283,15 @@ asset = TilerFactory(
     path_dependency=AssetIdParams,
     router_prefix="/collections/{collection_id}/items/{item_id}/assets/{asset_id}",
     add_viewer=True,
+    templates=templates,
 )
 app.include_router(
     asset.router,
     tags=["STAC Asset"],
     prefix="/collections/{collection_id}/items/{item_id}/assets/{asset_id}",
 )
+TITILER_CONFORMS_TO.update(asset.conforms_to)
+
 
 ###############################################################################
 # External Dataset Endpoints
@@ -282,30 +300,32 @@ external_cog = TilerFactory(
     extensions=[
         cogViewerExtension(),
     ],
+    templates=templates,
 )
 app.include_router(
     external_cog.router,
     tags=["External Dataset"],
     prefix="/external",
 )
+TITILER_CONFORMS_TO.update(external_cog.conforms_to)
 
 ###############################################################################
 # Tiling Schemes Endpoints
-tms = TMSFactory()
+tms = TMSFactory(templates=templates)
 app.include_router(tms.router, tags=["Tiling Schemes"])
+TITILER_CONFORMS_TO.update(tms.conforms_to)
 
 ###############################################################################
 # Algorithms Endpoints
-algorithms = AlgorithmFactory()
+algorithms = AlgorithmFactory(templates=templates)
 app.include_router(algorithms.router, tags=["Algorithms"])
+TITILER_CONFORMS_TO.update(algorithms.conforms_to)
 
 ###############################################################################
 # Colormaps endpoints
-cmaps = ColorMapFactory()
-app.include_router(
-    cmaps.router,
-    tags=["ColorMaps"],
-)
+cmaps = ColorMapFactory(templates=templates)
+app.include_router(cmaps.router, tags=["ColorMaps"])
+TITILER_CONFORMS_TO.update(cmaps.conforms_to)
 
 
 ###############################################################################
@@ -341,13 +361,30 @@ def ping(
 # Landing page Endpoint
 @app.get(
     "/",
-    response_class=HTMLResponse,
-    tags=["Landing"],
+    response_model=Landing,
+    response_model_exclude_none=True,
+    responses={
+        200: {
+            "content": {
+                "text/html": {},
+                "application/json": {},
+            }
+        },
+    },
+    tags=["OGC Common"],
 )
-def landing(request: Request):
-    """Get landing page."""
+def landing(
+    request: Request,
+    f: Annotated[
+        Optional[Literal["html", "json"]],
+        Query(
+            description="Response MediaType. Defaults to endpoint's default or value defined in `accept` header."
+        ),
+    ] = None,
+):
+    """TiTiler landing page."""
     data = {
-        "title": settings.name or "eoAPI-raster",
+        "title": settings.name or "eoAPI-Raster",
         "links": [
             {
                 "title": "Landing page",
@@ -366,6 +403,12 @@ def landing(request: Request):
                 "href": str(request.url_for("swagger_ui_html")),
                 "type": "text/html",
                 "rel": "service-doc",
+            },
+            {
+                "title": "Conformance Declaration",
+                "href": str(request.url_for("conformance")),
+                "type": "text/html",
+                "rel": "http://www.opengis.net/def/rel/ogc/1.0/conformance",
             },
             {
                 "title": "eoAPI Virtual Mosaic list (JSON)",
@@ -419,42 +462,112 @@ def landing(request: Request):
                 "rel": "data",
                 "templated": True,
             },
+            {
+                "title": "List of Available TileMatrixSets",
+                "href": str(request.url_for("tilematrixsets")),
+                "type": "application/json",
+                "rel": "http://www.opengis.net/def/rel/ogc/1.0/tiling-schemes",
+            },
+            {
+                "title": "List of Available Algorithms",
+                "href": str(request.url_for("available_algorithms")),
+                "type": "application/json",
+                "rel": "data",
+            },
+            {
+                "title": "List of Available ColorMaps",
+                "href": str(request.url_for("available_colormaps")),
+                "type": "application/json",
+                "rel": "data",
+            },
+            {
+                "title": "TiTiler-PgSTAC Documentation (external link)",
+                "href": "https://stac-utils.github.io/titiler-pgstac/",
+                "type": "text/html",
+                "rel": "doc",
+            },
+            {
+                "title": "TiTiler-PgSTAC source code (external link)",
+                "href": "https://github.com/stac-utils/titiler-pgstac",
+                "type": "text/html",
+                "rel": "doc",
+            },
         ],
     }
 
-    urlpath = request.url.path
-    if root_path := request.app.root_path:
-        urlpath = re.sub(r"^" + root_path, "", urlpath)
-    crumbs = []
-    baseurl = str(request.base_url).rstrip("/")
+    if f:
+        output_type = MediaType[f]
+    else:
+        accepted_media = [MediaType.html, MediaType.json]
+        output_type = (
+            accept_media_type(request.headers.get("accept", ""), accepted_media)
+            or MediaType.json
+        )
 
-    crumbpath = str(baseurl)
-    for crumb in urlpath.split("/"):
-        crumbpath = crumbpath.rstrip("/")
-        part = crumb
-        if part is None or part == "":
-            part = "Home"
-        crumbpath += f"/{crumb}"
-        crumbs.append({"url": crumbpath.rstrip("/"), "part": part.capitalize()})
+    if output_type == MediaType.html:
+        return create_html_response(
+            request,
+            data,
+            "landing",
+            title="eoAPI-raster",
+            templates=templates,
+        )
 
-    return templates.TemplateResponse(
-        request,
-        name="landing.html",
-        context={
-            "request": request,
-            "response": data,
-            "template": {
-                "api_root": baseurl,
-                "params": request.query_params,
-                "title": "TiTiler-PgSTAC",
-            },
-            "crumbs": crumbs,
-            "url": str(request.url),
-            "baseurl": baseurl,
-            "urlpath": str(request.url.path),
-            "urlparams": str(request.url.query),
+    return data
+
+
+@app.get(
+    "/conformance",
+    response_model=Conformance,
+    response_model_exclude_none=True,
+    responses={
+        200: {
+            "content": {
+                "text/html": {},
+                "application/json": {},
+            }
         },
-    )
+    },
+    tags=["OGC Common"],
+)
+def conformance(
+    request: Request,
+    f: Annotated[
+        Optional[Literal["html", "json"]],
+        Query(
+            description="Response MediaType. Defaults to endpoint's default or value defined in `accept` header."
+        ),
+    ] = None,
+):
+    """Conformance classes.
+
+    Called with `GET /conformance`.
+
+    Returns:
+        Conformance classes which the server conforms to.
+
+    """
+    data = {"conformsTo": sorted(TITILER_CONFORMS_TO)}
+
+    if f:
+        output_type = MediaType[f]
+    else:
+        accepted_media = [MediaType.html, MediaType.json]
+        output_type = (
+            accept_media_type(request.headers.get("accept", ""), accepted_media)
+            or MediaType.json
+        )
+
+    if output_type == MediaType.html:
+        return create_html_response(
+            request,
+            data,
+            "conformance",
+            title="Conformance",
+            templates=templates,
+        )
+
+    return data
 
 
 # Add dependencies to routes
