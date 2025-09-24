@@ -3,7 +3,7 @@ ARG PYTHON_VERSION=3.12
 FROM public.ecr.aws/lambda/python:${PYTHON_VERSION}
 
 # Install system dependencies to compile (numexpr)
-RUN yum install -y gcc-c++
+RUN dnf install -y gcc-c++ && dnf clean all
 
 WORKDIR /tmp
 RUN python -m pip install pip -U
@@ -12,8 +12,6 @@ COPY runtimes/eoapi/raster /tmp/raster
 RUN python -m pip install "mangum>=0.14,<0.15" /tmp/raster["psycopg-binary"] -t /asset --no-binary pydantic
 RUN rm -rf /tmp/raster
 
-# Remove system dependencies
-RUN yum remove -y gcc-c++
 
 # Reduce package size and remove useless files
 RUN cd /asset && find . -type f -name '*.pyc' | while read f; do n=$(echo $f | sed 's/__pycache__\///' | sed 's/.cpython-[0-9]*//'); cp $f $n; done;
@@ -22,6 +20,11 @@ RUN cd /asset && find . -type f -a -name '*.py' -print0 | xargs -0 rm -f
 RUN find /asset -type d -a -name 'tests' -print0 | xargs -0 rm -rf
 RUN rm -rdf /asset/numpy/doc/ /asset/boto3* /asset/botocore* /asset/bin /asset/geos_license /asset/Misc
 
+# Ref: https://github.com/developmentseed/titiler/discussions/1108#discussioncomment-13045681
+RUN cp /usr/lib64/libexpat.so.1 /asset/
+
 COPY infrastructure/handlers/raster_handler.py /asset/handler.py
+
+WORKDIR /asset
 
 CMD ["echo", "hello world"]
