@@ -21,8 +21,38 @@ dev = [
     "psycopg[pool]>=3.2.4",
     "pypgstac==0.9.8",
     "pytest>=8.3.4",
+    "bump-my-version"
 ]
 load = [
     "pgstacrs>=0.1.1",
     "stacrs>=0.5.9",
 ]
+
+[tool.bumpversion]
+current_version = "0.1.0"
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+tag = false
+commit = false
+tag_name = "{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "runtimes/eoapi/raster/eoapi/raster/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "runtimes/eoapi/stac/eoapi/stac/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "runtimes/eoapi/vector/eoapi/vector/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
