@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [0.3.1] - 2025-09-26
+
+* fix titiler tilejson endpoints 
+
 ## [0.3.0] - 2025-09-25
 
 * update eoapi-cdk version to `10.2.5`
