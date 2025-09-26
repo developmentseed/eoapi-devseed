@@ -33,12 +33,18 @@ class TiTilerExtension(ApiExtension):
         self.router.prefix = app.state.router_prefix
 
         @self.router.get(
-            "/collections/{collection_id}/items/{item_id}/WebMercatorQuad/tilejson.json",
+            "/collections/{collection_id}/items/{item_id}/{tileMatrixSetId}/tilejson.json",
         )
         async def tilejson(
             request: Request,
-            collection_id: str = Path(description="Collection ID"),
-            item_id: str = Path(description="Item ID"),
+            collection_id: Annotated[str, Path(description="Collection ID")],
+            item_id: Annotated[str, Path(description="Item ID")],
+            tileMatrixSetId: Annotated[
+                str,
+                Path(
+                    description="Identifier selecting one of the TileMatrixSetId supported."
+                ),
+            ],
             tile_format: Optional[str] = Query(
                 None, description="Output image type. Default is auto."
             ),
@@ -83,7 +89,7 @@ class TiTilerExtension(ApiExtension):
                 if key.lower() not in qs_key_to_remove
             ]
             return RedirectResponse(
-                f"{self.titiler_endpoint}/collections/{collection_id}/items/{item_id}/WebMercatorQuad/tilejson.json?{urlencode(qs)}"
+                f"{self.titiler_endpoint}/collections/{collection_id}/items/{item_id}/{tileMatrixSetId}/tilejson.json?{urlencode(qs)}"
             )
 
         @self.router.get(
@@ -97,8 +103,8 @@ class TiTilerExtension(ApiExtension):
         )
         async def stac_viewer(
             request: Request,
-            collection_id: str = Path(description="Collection ID"),
-            item_id: str = Path(description="Item ID"),
+            collection_id: Annotated[str, Path(description="Collection ID")],
+            item_id: Annotated[str, Path(description="Item ID")],
         ):
             """Get items and redirect to stac tiler."""
             qs = [(key, value) for (key, value) in request.query_params._list]

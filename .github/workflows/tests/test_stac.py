@@ -40,7 +40,7 @@ def test_stac_to_raster():
     """test link to raster api."""
     # tilejson
     resp = httpx.get(
-        f"{stac_endpoint}/collections/noaa-emergency-response/items/20200307aC0853300w361200/tilejson.json",
+        f"{stac_endpoint}/collections/noaa-emergency-response/items/20200307aC0853300w361200/WebMercatorQuad/tilejson.json",
         params={"assets": "cog"},
     )
     assert resp.status_code == 307
