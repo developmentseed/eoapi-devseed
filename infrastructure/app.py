@@ -19,7 +19,7 @@ from aws_cdk import (
     aws_s3,
 )
 from aws_cdk.aws_apigateway import DomainNameOptions
-from aws_cdk.aws_apigatewayv2_alpha import DomainName
+from aws_cdk.aws_apigatewayv2 import DomainName
 from config import AppConfig
 from constructs import Construct
 from eoapi_cdk import (
@@ -193,7 +193,6 @@ class eoAPIStack(Stack):
                 "NAME": app_config.build_service_name("stac"),
                 "description": f"{app_config.stage} STAC API",
                 "TITILER_ENDPOINT": raster.url.strip("/"),
-                "EXTENSIONS": '["filter", "query", "sort", "fields", "pagination", "titiler", "collection_search", "free_text"]',
             },
             db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
