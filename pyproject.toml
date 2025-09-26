@@ -1,6 +1,6 @@
 [project]
 name = "eoapi-devseed"
-version = "0.2.0"
+version = "0.3.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -28,7 +28,7 @@ load = [
 ]
 
 [tool.bumpversion]
-current_version = "0.2.0"
+current_version = "0.3.0"
 search = "{current_version}"
 replace = "{new_version}"
 regex = false
