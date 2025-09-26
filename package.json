@@ -2,6 +2,6 @@
   "name": "eoapi-devseed",
   "version": "0.1.0",
   "dependencies": {
-    "aws-cdk": "2.130.0"
+    "aws-cdk": "2.1016.1"
   }
 }

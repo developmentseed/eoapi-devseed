@@ -2,6 +2,8 @@ ARG PYTHON_VERSION=3.12
 
 FROM public.ecr.aws/lambda/python:${PYTHON_VERSION}
 
+RUN dnf install -y findutils && dnf clean all
+
 WORKDIR /tmp
 RUN python -m pip install pip -U
 

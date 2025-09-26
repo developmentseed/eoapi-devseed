@@ -69,9 +69,8 @@ jobs:
     if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     env:
       STACK_NAME: eoapi-dev
-  
-    steps:
 
+    steps:
       - uses: actions/checkout@v4
 
       - name: Create config file
