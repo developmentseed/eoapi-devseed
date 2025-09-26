@@ -142,7 +142,6 @@ class eoAPIStack(Stack):
             self,
             "raster-api",
             api_env={
-                "NAME": app_config.build_service_name("raster"),
                 "description": f"{app_config.stage} Raster API",
             },
             db=pgstac_db.connection_target,
@@ -190,7 +189,6 @@ class eoAPIStack(Stack):
             self,
             "stac-api",
             api_env={
-                "NAME": app_config.build_service_name("stac"),
                 "description": f"{app_config.stage} STAC API",
                 "TITILER_ENDPOINT": raster.url.strip("/"),
             },
@@ -240,7 +238,6 @@ class eoAPIStack(Stack):
             db=pgstac_db.connection_target,
             db_secret=pgstac_db.pgstac_secret,
             api_env={
-                "NAME": app_config.build_service_name("vector"),
                 "description": f"{app_config.stage} tipg API",
             },
             # If the db is not in the public subnet then we need to put

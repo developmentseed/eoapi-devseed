@@ -33,7 +33,7 @@ class TiTilerExtension(ApiExtension):
         self.router.prefix = app.state.router_prefix
 
         @self.router.get(
-            "/collections/{collection_id}/items/{item_id}/tilejson.json",
+            "/collections/{collection_id}/items/{item_id}/WebMercatorQuad/tilejson.json",
         )
         async def tilejson(
             request: Request,
@@ -83,7 +83,7 @@ class TiTilerExtension(ApiExtension):
                 if key.lower() not in qs_key_to_remove
             ]
             return RedirectResponse(
-                f"{self.titiler_endpoint}/collections/{collection_id}/items/{item_id}/tilejson.json?{urlencode(qs)}"
+                f"{self.titiler_endpoint}/collections/{collection_id}/items/{item_id}/WebMercatorQuad/tilejson.json?{urlencode(qs)}"
             )
 
         @self.router.get(

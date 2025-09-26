@@ -363,7 +363,7 @@ const set1bViz = () => {
     if (cmap.value !== 'b&w') params.colormap_name = cmap.value
 
     const url_params = Object.keys(params).map(i => `${i}=${params[i]}`).join('&')
-    let url = `{{ endpoint }}/tilejson.json?${url_params}`
+    let url = `{{ endpoint }}/WebMercatorQuad/tilejson.json?${url_params}`
 
     map.addSource('raster', { type: 'raster', url: url , tileSize: 256})
     map.addLayer({ id: 'raster', type: 'raster', source: 'raster' })
@@ -401,7 +401,7 @@ const set3bViz = () => {
     }
 
     const url_params = Object.keys(params).map(i => `${i}=${params[i]}`).join('&')
-    let url = `{{ endpoint }}/tilejson.json?${url_params}&${asset_params}&${indexes_params}`
+    let url = `{{ endpoint }}/WebMercatorQuad/tilejson.json?${url_params}&${asset_params}&${indexes_params}`
 
     map.addSource('raster', { type: 'raster', url: url, tileSize: 256 })
     map.addLayer({ id: 'raster', type: 'raster', source: 'raster' })
