@@ -8,11 +8,16 @@ services:
       dockerfile: Dockerfile.browser
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:8085:8085"
-    env_file:
-      - path: .env
-        required: false
-      - path: .stac-browser.env
-        required: false
+    environment:
+      SB_catalogUrl: http://${MY_DOCKER_IP:-127.0.0.1}:8084 # auth-proxy
+      SB_authConfig: |
+        {
+          type: 'apiKey',
+          in: 'header',
+          name: 'Authorization',
+          formatter: 'Bearer',
+          description: `Please retrieve the token from our [API console](https://example.com/api-console).\n\nFor further questions contact <mailto:support@example.com>.`
+        }
     depends_on:
       - stac
       - raster
@@ -157,6 +162,18 @@ services:
     command: postgres -N 500
     volumes:
       - ./.pgdata:/var/lib/postgresql/data
+
+  auth-proxy:
+    image: ghcr.io/developmentseed/stac-auth-proxy:latest
+    ports:
+      - "${MY_DOCKER_IP:-127.0.0.1}:8084:8000" # auth-proxy doesn't currently support custom ports, so we use the default port 8000
+    environment:
+      UPSTREAM_URL: http://stac:8081
+      OIDC_DISCOVERY_URL: https://goadmin.ifrc.org/o/.well-known/openid-configuration
+      DEFAULT_PUBLIC: false
+      OVERRIDE_HOST: false # avoid html links point to stac:8081
+    depends_on:
+      - stac
 
 networks:
   default:
