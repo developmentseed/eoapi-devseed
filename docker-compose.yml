@@ -52,7 +52,7 @@ services:
       watch:
         - action: sync+restart
           path: ./runtimes/eoapi/stac/eoapi
-          target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
+          target: /usr/local/lib/python3.12/site-packages/eoapi
         - action: rebuild
           path: ./runtimes/eoapi/stac
     volumes:
@@ -102,7 +102,7 @@ services:
       watch:
         - action: sync+restart
           path: ./runtimes/eoapi/raster/eoapi
-          target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
+          target: /usr/local/lib/python3.12/site-packages/eoapi
         - action: rebuild
           path: ./runtimes/eoapi/raster
     volumes:
@@ -135,7 +135,7 @@ services:
       watch:
         - action: sync+restart
           path: ./runtimes/eoapi/vector/eoapi
-          target: /opt/bitnami/python/lib/python3.11/site-packages/eoapi
+          target: /usr/local/lib/python3.12/site-packages/eoapi
         - action: rebuild
           path: ./runtimes/eoapi/vector
     depends_on:
