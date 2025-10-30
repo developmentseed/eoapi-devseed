@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [0.3.2] - 2025-10-30
+
+* enable SnapStart on lambda functions 
+
 ## [0.3.1] - 2025-09-26
 
 * fix titiler tilejson endpoints 
@@ -26,6 +30,9 @@ All notable changes to this project will be documented in this file.
 
 * first tagged release
 
-[unreleased]: https://github.com/developmentseed/eoapi-devseed/compare/0.2.0...HEAD
+[unreleased]: https://github.com/developmentseed/eoapi-devseed/compare/0.3.2...HEAD
+[0.3.2]: https://github.com/developmentseed/eoapi-devseed/compare/0.3.1...0.3.2
+[0.3.1]: https://github.com/developmentseed/eoapi-devseed/compare/0.3.0...0.3.1
+[0.3.0]: https://github.com/developmentseed/eoapi-devseed/compare/0.2.0...0.3.0
 [0.2.0]: https://github.com/developmentseed/eoapi-devseed/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/developmentseed/eoapi-devseed/compare/49ec34d33b6d21bfb51cf37bfa167ffcb5f09938...0.1.0
