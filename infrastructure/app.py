@@ -181,6 +181,7 @@ class eoAPIStack(Stack):
                 "handler": "handler.handler",
                 "runtime": aws_lambda.Runtime.PYTHON_3_12,
             },
+            enable_snap_start=True,
         )
 
         #######################################################################
@@ -228,6 +229,7 @@ class eoAPIStack(Stack):
                 "handler": "handler.handler",
                 "runtime": aws_lambda.Runtime.PYTHON_3_12,
             },
+            enable_snap_start=True,
         )
 
         #######################################################################
@@ -274,6 +276,7 @@ class eoAPIStack(Stack):
                 "handler": "handler.handler",
                 "runtime": aws_lambda.Runtime.PYTHON_3_12,
             },
+            enable_snap_start=True,
         )
 
         if app_config.stac_ingestor:
