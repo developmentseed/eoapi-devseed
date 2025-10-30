@@ -28,7 +28,7 @@ load = [
 ]
 
 [tool.bumpversion]
-current_version = "0.3.1"
+current_version = "0.3.2"
 search = "{current_version}"
 replace = "{new_version}"
 regex = false
