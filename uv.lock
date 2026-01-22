@@ -252,7 +252,7 @@ wheels = [
 
 [[package]]
 name = "eoapi-devseed"
-version = "0.3.1"
+version = "0.3.2"
 source = { virtual = "." }
 
 [package.dev-dependencies]
@@ -291,7 +291,7 @@ dev = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "pre-commit", specifier = ">=4.1.0" },
     { name = "psycopg", extras = ["pool"], specifier = ">=3.2.4" },
-    { name = "pypgstac", specifier = "==0.9.8" },
+    { name = "pypgstac", specifier = "==0.9.9" },
     { name = "pytest", specifier = ">=8.3.4" },
 ]
 load = [
@@ -735,7 +735,7 @@ wheels = [
 
 [[package]]
 name = "pypgstac"
-version = "0.9.8"
+version = "0.9.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cachetools" },
@@ -749,9 +749,9 @@ dependencies = [
     { name = "tenacity" },
     { name = "version-parser" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/37/dd/a6f115bf82148b844e4c6deafa093fb8b4484d6e29b4fada2003b125f7de/pypgstac-0.9.8.tar.gz", hash = "sha256:173fef7af4f069effa00478ae5578cd311fc8f990683a32b95f6b12f485ceeff", size = 1476341, upload-time = "2025-08-04T21:17:42.801Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/30/f3/3450e6c7f25a4010265acc983ab501ff1bdb301adbe958082be393b13449/pypgstac-0.9.9.tar.gz", hash = "sha256:d8977f4f2a2e6dfed1e5c3898cf92deb1fdae3dd48aa510371bbf2d1c1a309b3", size = 1508277, upload-time = "2026-01-22T22:16:01.375Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/d1/32f1f533a8345110d090c688d3b4c08f7272b9a9e283e63fdac47d57adb9/pypgstac-0.9.8-py3-none-any.whl", hash = "sha256:b2ff10ee81924d7919761d8e6437f69d101d4f0386037a0e6f65a5e30506245c", size = 1642158, upload-time = "2025-08-04T21:17:40.916Z" },
+    { url = "https://files.pythonhosted.org/packages/99/15/fb88b47dd632a0849707c58c853d03753c5db0d9809ef859e0dd6d0ae054/pypgstac-0.9.9-py3-none-any.whl", hash = "sha256:739f77675f32d350b37d7afe791d285b7bf8b90f5265ad2907b27e9b1f560e22", size = 1678051, upload-time = "2026-01-22T22:15:59.651Z" },
 ]
 
 [[package]]
