@@ -18,7 +18,7 @@ RUN cd /asset && find . -type d -a -name '__pycache__' -print0 | xargs -0 rm -rf
 RUN cd /asset && find . -type f -a -name '*.py' -print0 | xargs -0 rm -f
 RUN find /asset -type d -a -name 'tests' -print0 | xargs -0 rm -rf
 RUN rm -rdf /asset/numpy/doc/ /asset/boto3* /asset/botocore* /asset/bin /asset/geos_license /asset/Misc
-RUN find /asset -type f -name '*.so*' -not -path "./numpy.libs/*" -exec strip --strip-unneeded {} \;
+RUN find /asset -type f -name '*.so*' -not -path "/asset/numpy.libs/*" -exec strip --strip-unneeded {} \;
 
 # Ref: https://github.com/developmentseed/titiler/discussions/1108#discussioncomment-13045681
 RUN cp /usr/lib64/libexpat.so.1 /asset/
