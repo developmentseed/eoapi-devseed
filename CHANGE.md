@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [0.3.3] - 2026-1-23
+
 * update pgstac to 0.9.9
 * update eoapi-cdk version to `10.4.2`
 
