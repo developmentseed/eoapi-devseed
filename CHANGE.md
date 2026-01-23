@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+* update pgstac to 0.9.9
+* update eoapi-cdk version to `10.4.2`
+
 ## [0.3.2] - 2025-10-30
 
 * enable SnapStart on lambda functions 
