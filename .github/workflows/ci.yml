@@ -9,6 +9,7 @@ on:
     - '*'
     paths:
       - 'runtimes/**'
+      - 'infrastructure/**'
       - 'docker-compose.*'
       - 'dockerfiles/**'
       - '.github/workflows/ci.yml'

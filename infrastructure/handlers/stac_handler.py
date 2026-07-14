@@ -105,6 +105,13 @@ async def startup_event() -> None:
 
 handler = Mangum(app, lifespan="off")
 
+
+async def _enter_lifespan() -> None:
+    """Run app startup without shutdown (for SnapStart snapshot initialization)."""
+    cm = app.router.lifespan_context(app)
+    await cm.__aenter__()
+
+
 if "AWS_EXECUTION_ENV" in os.environ:
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(app.router.startup())
+    loop.run_until_complete(_enter_lifespan())
