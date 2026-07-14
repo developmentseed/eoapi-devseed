@@ -44,6 +44,8 @@ h6 {
 
 .md-typeset a:not(.md-button) {
   color: var(--md-primary-fg-color);
+  text-decoration: none;
+  font-weight: 800;
 }
 
 .md-typeset a:not(.md-button):hover {

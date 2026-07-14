@@ -9,6 +9,13 @@
   border-bottom: 1px solid rgb(222, 222, 222);
 }
 
+.hero-section .hero-logo {
+  display: block;
+  height: clamp(2rem, 8vw, 3.5rem);
+  width: auto;
+  margin: 0 0 2rem;
+}
+
 .hero-section h1 {
   color: var(--md-default-fg-color);
   font-weight: 700;
@@ -107,7 +114,9 @@ section + section {
 }
 
 .docs-grid a {
-  font-weight: 600;
+  font-weight: 800;
+  text-decoration: none;
+  line-height: 2em;
 }
 
 .gradient-section {
@@ -158,7 +167,7 @@ section + section {
 
   .md-typeset h2 {
     font-size: 2rem;
-    line-height: 2.5rem;
+    line-height: 3.5rem;
   }
 
   section + section {
