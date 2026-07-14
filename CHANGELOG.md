@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0](https://github.com/developmentseed/eoapi-devseed/compare/0.3.4...0.4.0) (2026-07-14)
+
+
+### Added
+
+* added stac transactions with stac-auth-proxy. ([80fb41a](https://github.com/developmentseed/eoapi-devseed/commit/80fb41abd8707733feabb90e9361de80b686b7bd))
+
+
+### Fixed
+
+* publication of containers. ([fc4a571](https://github.com/developmentseed/eoapi-devseed/commit/fc4a5714efea7a15298ac4778bc79c49fadcc022))
+* stac viewer and raster mosaik builder. ([c9b455a](https://github.com/developmentseed/eoapi-devseed/commit/c9b455ad6017ffe314185a56e8ee5b237643fe5c))
+* tile preview in stac browser. ([8a899c3](https://github.com/developmentseed/eoapi-devseed/commit/8a899c347187826313de0c93b4e1b3d10b4a4d78))
+
+
+### Maintenance
+
+* use conventional semver for release-please ([ba28065](https://github.com/developmentseed/eoapi-devseed/commit/ba2806547c84ab5e9e9a12cb6873fefaaedcdb04))
+
 ## [0.3.4](https://github.com/developmentseed/eoapi-devseed/compare/0.3.3...0.3.4) (2026-07-14)
 
 
