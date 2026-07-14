@@ -23,8 +23,8 @@ jobs:
     strategy:
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
       - name: Install
         run: uv sync
       - name: Run pre-commit
@@ -34,7 +34,7 @@ jobs:
         run: docker compose up -d
 
       - name: install lib postgres
-        uses: nyurik/action-setup-postgis@v2
+        uses: nyurik/action-setup-postgis@228cfe4dd41aad01801a0bdc767040e5024fff1d # v2
 
       - name: Ingest Stac Items/Collection
         run: |
@@ -92,26 +92,26 @@ jobs:
       STACK_NAME: eoapi-dev
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Create config file
         run: |
           echo "${{ vars.CONFIG_YAML }}" > config.yaml
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
         with:
           role-to-assume: arn:aws:iam::390960605471:role/eoapi-devseed 
           role-session-name: eoapi-devseed
           aws-region: us-west-2
 
       - name: Set up node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 20
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
 
       - name: Install dependencies
         run: |
