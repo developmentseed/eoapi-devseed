@@ -2,7 +2,7 @@
 
 import httpx
 
-raster_endpoint = "http://0.0.0.0:8082"
+raster_endpoint = "http://0.0.0.0:8080/raster"
 
 
 def test_raster_api():
