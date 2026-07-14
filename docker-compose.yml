@@ -33,9 +33,9 @@ services:
         STAC_BROWSER_REF: 9c299f43c7d8506d5b655c0a1de3924ba38a1f63
     environment:
       SB_pathPrefix: "${EOAPI_BROWSER_PATH_PREFIX:-/browser}"
-      SB_catalogUrl: "${EOAPI_STAC_BROWSER_CATALOG_URL:-http://127.0.0.1:8080/stac}"
+      SB_catalogUrl: "${EOAPI_STAC_BROWSER_CATALOG_URL:-http://localhost:8080/stac}"
       SB_catalogTitle: "eoAPI STAC Browser"
-      SB_useTileLayerAsFallback: "true"
+      SB_useTileLayerAsFallback: "false"
       EOAPI_TILE_SERVER_BASE_URL: "${EOAPI_TILE_SERVER_BASE_URL:-http://127.0.0.1:8080/raster}"
     env_file:
       - path: .env

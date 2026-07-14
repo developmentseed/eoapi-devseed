@@ -8,7 +8,7 @@ module.exports = {
   fallbackLocale: "en",
   supportedLocales: ["de", "es", "en", "fr", "it", "ro"],
   apiCatalogPriority: null,
-  useTileLayerAsFallback: true,
+  useTileLayerAsFallback: false,
   displayGeoTiffByDefault: false,
   buildTileUrlTemplate: ({ href, asset }) =>
     "https://raster.eoapi.dev/external/tiles/WebMercatorQuad/{z}/{x}/{y}@2x?url=" +
