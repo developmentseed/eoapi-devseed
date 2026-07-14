@@ -1,0 +1,93 @@
+# Optional overlay: Prometheus + Grafana monitoring for eoAPI runtimes.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.mock-oidc.yml -f docker-compose.metrics.yml up
+#
+# Grafana is served at http://localhost:8080/monitoring (via Traefik).
+# Prometheus UI is at http://127.0.0.1:9090 for debugging.
+#
+# Grafana login uses the mock OIDC server when docker-compose.mock-oidc.yml is
+# also applied — any username works. Username/password login is disabled.
+
+services:
+  traefik:
+    depends_on:
+      - grafana
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./dockerfiles/metrics/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "${MY_DOCKER_IP:-127.0.0.1}:9090:9090"
+    depends_on:
+      - stac
+      - stac-auth-proxy
+      - raster
+      - vector
+      - postgres-exporter
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "true"
+      GF_USERS_AUTO_ASSIGN_ORG_ROLE: Editor
+      # Must match the Traefik URL, not Grafana's internal :3000 port.
+      GF_SERVER_ROOT_URL: "${EOAPI_GRAFANA_ROOT_URL:-http://localhost:8080/monitoring/}"
+      GF_SERVER_SERVE_FROM_SUB_PATH: "true"
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_AUTH_BASIC_ENABLED: "false"
+      GF_AUTH_GENERIC_OAUTH_ENABLED: "true"
+      GF_AUTH_GENERIC_OAUTH_NAME: Mock OIDC
+      GF_AUTH_GENERIC_OAUTH_CLIENT_ID: grafana
+      GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: ""
+      GF_AUTH_GENERIC_OAUTH_SCOPES: openid profile
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: http://localhost:8085/authorize
+      GF_AUTH_GENERIC_OAUTH_TOKEN_URL: http://mock-oidc:8888/token
+      GF_AUTH_GENERIC_OAUTH_USE_PKCE: "true"
+      GF_AUTH_GENERIC_OAUTH_ALLOW_SIGN_UP: "true"
+      # mock-oidc only returns `sub` unless custom claims are provided.
+      GF_AUTH_GENERIC_OAUTH_LOGIN_ATTRIBUTE_PATH: sub
+      GF_AUTH_GENERIC_OAUTH_NAME_ATTRIBUTE_PATH: sub
+      GF_AUTH_GENERIC_OAUTH_EMAIL_ATTRIBUTE_PATH: "email || join('', [sub, '@localhost'])"
+      GF_AUTH_GENERIC_OAUTH_SKIP_ORG_ROLE_SYNC: "true"
+      GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH: "Editor"
+    volumes:
+      - ./dockerfiles/metrics/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dockerfiles/metrics/grafana/dashboards:/etc/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=PathPrefix(`/monitoring`)
+      - traefik.http.routers.grafana.entrypoints=web
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: postgresql://username:password@database:5432/postgis?sslmode=disable
+    depends_on:
+      database:
+        condition: service_healthy
+
+  stac:
+    environment:
+      - PROMETHEUS_DISABLE_CREATED_SERIES=True
+
+  raster:
+    environment:
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
+      - PROMETHEUS_DISABLE_CREATED_SERIES=True
+    command: bash -c "mkdir -p /tmp/prometheus && rm -rf /tmp/prometheus/* && bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && uvicorn eoapi.raster.app:app --host 0.0.0.0 --port 8082 --workers 10"
+
+  vector:
+    environment:
+      - PROMETHEUS_MULTIPROC_DIR=/tmp/prometheus
+      - PROMETHEUS_DISABLE_CREATED_SERIES=True
+    command: bash -c "mkdir -p /tmp/prometheus && rm -rf /tmp/prometheus/* && bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && uvicorn eoapi.vector.app:app --host 0.0.0.0 --port 8083 --workers 10"

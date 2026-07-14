@@ -232,6 +232,15 @@ api = StacApi(
 )
 app = api.app
 
+try:
+    from .metrics import instrument_app
+
+    instrument_app(app)
+except ImportError:
+    logger.warning(
+        "prometheus-fastapi-instrumentator not installed; metrics endpoint disabled"
+    )
+
 
 @app.get("/viewer", response_class=HTMLResponse)
 async def viewer_page(request: Request):

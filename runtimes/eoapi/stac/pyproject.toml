@@ -27,7 +27,8 @@ dependencies = [
     "starlette-cramjam>=0.4,<0.8",
     "psycopg_pool",
     "eoapi.auth-utils>=0.2.0",
-    "boto3"
+    "boto3",
+    "prometheus-fastapi-instrumentator>=8.0.2",
 ]
 
 [project.optional-dependencies]

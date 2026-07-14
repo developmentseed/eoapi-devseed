@@ -136,6 +136,41 @@ Item map viewers are available at `/raster/collections/{collection_id}/items/{it
 
 If you've added a vector dataset to the `public` schema in the Postgres database, they will be available through the **Vector** service at [http://localhost:8080/vector](http://localhost:8080/vector).
 
+### Monitoring
+
+Optional Prometheus + Grafana stack for service metrics. Start with the metrics overlay (combine with mock OIDC for Grafana login):
+
+```
+docker compose -f docker-compose.yml -f docker-compose.mock-oidc.yml -f docker-compose.metrics.yml up --watch
+```
+
+| Endpoint | Description |
+|----------|-------------|
+| [http://localhost:8080/monitoring](http://localhost:8080/monitoring) | Grafana dashboards (via Traefik); start with **eoAPI Overview** |
+| [http://127.0.0.1:9090](http://127.0.0.1:9090) | Prometheus UI (debugging) |
+| `stac:8081/_mgmt/metrics` | STAC API metrics (internal) |
+| `raster:8082/metrics` | Raster service metrics (internal) |
+| `vector:8083/metrics` | Vector service metrics (internal) |
+
+Provisioned dashboards live in the **eoAPI** folder:
+
+- **eoAPI Overview** — service health, cross-service comparison, and database saturation (connections, transactions, cache hit ratio)
+- **eoAPI — STAC Auth Proxy**, **STAC**, **Raster**, **Vector** — per-service detail (errors, latency, traffic by operation)
+
+All use low-cardinality `operation` labels from the runtimes. STAC maps STAC API endpoints; raster and vector map coarse route groups (`tiles`, `register_search`, `list_items`, etc.). The Kubernetes infrastructure dashboard in [eoapi-k8s](https://github.com/developmentseed/eoapi-k8s) (`charts/eoapi/data/dashboards/eoAPI-Dashboard.json`) targets pod CPU/memory and nginx ingress metrics and is not included in this Docker Compose stack.
+
+**Grafana login:** When using `docker-compose.mock-oidc.yml`, click **Sign in with Mock OIDC** and enter any username on the mock login form. Grafana maps the username to `{username}@localhost` when the provider does not return an email claim. Username/password login is disabled.
+
+If Grafana is accessed on a different host or port, set `EOAPI_GRAFANA_ROOT_URL` (for example `https://eoapi.example.com/monitoring/`) so OAuth callbacks use the Traefik URL rather than Grafana's internal port.
+
+To populate Grafana with sample traffic:
+
+```
+uv run scripts/simulate_traffic.py --duration 3m --users 6
+```
+
+Run the [ingest profile](#local-testing) first for richer STAC and raster traffic, then generate load with:
+
 ## Deployment
 
 ### Requirements

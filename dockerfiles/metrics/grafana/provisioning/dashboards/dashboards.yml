@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: eoAPI
+    orgId: 1
+    folder: eoAPI
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /etc/grafana/dashboards
