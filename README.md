@@ -103,6 +103,7 @@ Once the applications are *up*, you'll need to add STAC **Collections** and **It
 
 Then you can start exploring your dataset with:
 
+- the **eoAPI landing page** [http://localhost:8080/](http://localhost:8080/) — component hub and documentation links
 - the STAC Metadata service [http://localhost:8080/stac](http://localhost:8080/stac)
 - the STAC Search viewer [http://localhost:8080/stac/viewer](http://localhost:8080/stac/viewer)
 - the Raster service [http://localhost:8080/raster](http://localhost:8080/raster)

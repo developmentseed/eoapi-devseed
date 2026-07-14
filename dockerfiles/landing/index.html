@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eoAPI</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="img/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="assets/extra.css">
+  <link rel="stylesheet" href="assets/home.css">
+</head>
+<body>
+  <main>
+    <section class="hero-section">
+      <div class="md-grid md-typeset">
+        <p class="supheading">eoAPI</p>
+        <h1>Earth Observation Data at Scale</h1>
+        <p class="lead">Explore the eoAPI services running on this instance.</p>
+      </div>
+    </section>
+
+    <section class="md-content secondary-section" id="services">
+      <div class="md-grid">
+        <div class="md-content__inner">
+          <header class="md-typeset">
+            <h5 class="supheading">Available services</h5>
+            <h2>Components</h2>
+          </header>
+          <ul class="feature-grid" style="grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));">
+            <li>
+              <article class="feature-item">
+                <img src="img/stac_logo.png" alt="STAC logo" loading="lazy">
+                <div class="feature-item__description md-typeset">
+                  <h3>STAC Browser</h3>
+                  <h5>Catalog explorer UI</h5>
+                  <p>Browse collections and items with map previews and tile integration.</p>
+                  <ul class="service-links">
+                    <li><a href="/browser/">Open browser</a></li>
+                  </ul>
+                </div>
+              </article>
+            </li>
+            <li>
+              <article class="feature-item">
+                <img src="img/stacfastapi_logo.png" alt="stac-fastapi logo" loading="lazy">
+                <div class="feature-item__description md-typeset">
+                  <h3>STAC API</h3>
+                  <h5>stac-fastapi — metadata &amp; search</h5>
+                  <p>OGC Features API for STAC catalog search, collections, and items.</p>
+                  <ul class="service-links">
+                    <li><a href="/stac">OpenAPI docs</a></li>
+                    <li><a href="/stac/viewer">Search viewer</a></li>
+                  </ul>
+                </div>
+              </article>
+            </li>
+            <li>
+              <article class="feature-item">
+                <img src="img/titiler_logo.png" alt="TiTiler logo" loading="lazy">
+                <div class="feature-item__description md-typeset">
+                  <h3>Raster / TiTiler</h3>
+                  <h5>titiler-pgstac — dynamic mosaics</h5>
+                  <p>Raster tiling, virtual mosaics, and map viewers for STAC items.</p>
+                  <ul class="service-links">
+                    <li><a href="/raster">OpenAPI docs</a></li>
+                    <li><a href="/raster/searches/builder">Mosaic builder</a></li>
+                  </ul>
+                </div>
+              </article>
+            </li>
+            <li>
+              <article class="feature-item">
+                <img src="img/tipg_logo.png" alt="tipg logo" loading="lazy">
+                <div class="feature-item__description md-typeset">
+                  <h3>Vector / tipg</h3>
+                  <h5>tipg — OGC Features &amp; Tiles</h5>
+                  <p>Vector datasets from Postgres exposed as OGC APIs.</p>
+                  <ul class="service-links">
+                    <li><a href="/vector">OpenAPI docs</a></li>
+                  </ul>
+                </div>
+              </article>
+            </li>
+            <li>
+              <article class="feature-item">
+                <img src="img/pgstac_logo.png" alt="pgstac logo" loading="lazy">
+                <div class="feature-item__description md-typeset">
+                  <h3>Database</h3>
+                  <h5>pgSTAC — Postgres</h5>
+                  <p>PostGIS + pgSTAC backing the STAC and raster services. Connect directly from the host.</p>
+                  <ul class="service-links">
+                    <li><code>localhost:5439</code> (user: <code>username</code>)</li>
+                  </ul>
+                </div>
+              </article>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="md-content docs-section" id="docs">
+      <div class="md-grid">
+        <div class="md-content__inner">
+          <header class="md-typeset">
+            <h5 class="supheading">Documentation</h5>
+            <h2>Learn more</h2>
+            <p>External guides for customizing, deploying, and operating eoAPI.</p>
+          </header>
+          <ul class="docs-grid">
+            <li class="md-typeset">
+              <a href="https://eoapi.dev/" target="_blank" rel="noopener noreferrer">eoAPI Website & Documentation</a>
+              <p>How to customize and extend eoAPI for your use case.</p>
+            </li>
+            <li class="md-typeset">
+              <a href="https://github.com/developmentseed/eoapi-devseed" target="_blank" rel="noopener noreferrer">eoapi-devseed repository</a>
+              <p>Local Docker Compose setup and runtime customizations.</p>
+            </li>
+            <li class="md-typeset">
+              <a href="https://github.com/developmentseed/eoapi-k8s" target="_blank" rel="noopener noreferrer">Kubernetes deployment</a>
+              <p>Production-ready Helm chart and cluster deployment docs.</p>
+            </li>
+            <li class="md-typeset">
+              <a href="https://github.com/developmentseed/eoapi-cdk" target="_blank" rel="noopener noreferrer">Amazon Web Services deployment</a>
+              <p>AWS CDK constructs for deploying eoAPI.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="md-content gradient-section">
+      <div class="md-grid">
+        <div class="md-content__inner text-centered">
+          <p class="md-typeset">Brought to you by</p>
+          <a href="https://developmentseed.org" target="_blank" rel="noopener noreferrer"
+             style="display: inline-block; margin-top: 1.5rem;" title="Development Seed">
+            <img src="img/devseed_logo.svg" height="64" alt="Development Seed logo" loading="lazy">
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

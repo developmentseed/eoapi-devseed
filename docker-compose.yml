@@ -10,19 +10,22 @@ services:
       - "${MY_DOCKER_IP:-127.0.0.1}:8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.root.rule=Path(`/`)
-      - traefik.http.routers.root.entrypoints=web
-      - traefik.http.routers.root.middlewares=root-redirect
-      - traefik.http.routers.root.service=noop@internal
-      - traefik.http.middlewares.root-redirect.redirectregex.regex=^http://([^/]+)/?$
-      - traefik.http.middlewares.root-redirect.redirectregex.replacement=http://$${1}/browser/
     depends_on:
+      - doc-server
       - stac-auth-proxy
       - raster
       - vector
       - stac-browser
+
+  doc-server:
+    image: nginxinc/nginx-unprivileged:alpine
+    volumes:
+      - ./dockerfiles/landing:/usr/share/nginx/html:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.doc-server.rule=Path(`/`) || PathPrefix(`/assets/`) || PathPrefix(`/img/`)
+      - traefik.http.routers.doc-server.entrypoints=web
+      - traefik.http.services.doc-server.loadbalancer.server.port=8080
 
   stac-browser:
     build:

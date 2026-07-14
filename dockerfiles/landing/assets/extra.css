@@ -1,0 +1,127 @@
+:root,
+[data-md-color-scheme='default'] {
+  --md-heading-font: 'Oswald', sans-serif;
+  --md-primary-fg-color: #cf3f02;
+  --md-primary-bg-color: #ffffff;
+  --md-default-fg-color: #443f3f;
+  --md-default-bg-color: #ffffff;
+  --md-accent-fg-color: #a33202;
+  --boxShadowD: 0px 12px 24px 0px rgba(68, 63, 63, 0.08),
+    0px 0px 4px 0px rgba(68, 63, 63, 0.08);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--md-heading-font);
+  font-weight: bold;
+}
+
+.md-typeset h1,
+.md-typeset h2,
+.md-typeset h3,
+.md-typeset h4 {
+  font-weight: bold;
+  color: var(--md-default-fg-color);
+  margin: 0;
+}
+
+.md-typeset p {
+  margin: 0 0 1rem;
+  line-height: 1.6;
+}
+
+.md-typeset a:not(.md-button) {
+  color: var(--md-primary-fg-color);
+}
+
+.md-typeset a:not(.md-button):hover {
+  color: var(--md-accent-fg-color);
+}
+
+.md-button,
+.md-typeset .md-button {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--md-heading-font);
+  font-weight: bold;
+  text-decoration: none;
+  border-radius: 0.125rem;
+  padding: 0.625rem 1.25rem;
+  border: 2px solid transparent;
+}
+
+.md-button--primary,
+.md-typeset a.md-button--primary {
+  background-color: var(--md-primary-fg-color);
+  color: var(--md-default-bg-color);
+}
+
+.md-button--secondary,
+.md-typeset a.md-button--secondary {
+  background-color: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  border-color: var(--md-default-fg-color);
+}
+
+.md-button:hover,
+.md-typeset .md-button:hover {
+  background-color: var(--md-accent-fg-color);
+  color: var(--md-default-bg-color);
+  border-color: var(--md-accent-fg-color);
+}
+
+.md-content .supheading,
+.supheading {
+  font-family: var(--md-heading-font);
+  text-transform: uppercase;
+  color: var(--md-primary-fg-color);
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.md-grid {
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.md-content__inner {
+  padding: 0.5rem 0;
+}
+
+.text-centered {
+  text-align: center;
+}
+
+.lead {
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.service-links {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.service-links li {
+  margin: 0.25rem 0;
+}
+
+.service-links a {
+  font-weight: 600;
+}
