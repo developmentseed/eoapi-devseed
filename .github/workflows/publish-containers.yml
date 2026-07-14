@@ -50,7 +50,7 @@ jobs:
             platforms: linux/amd64,linux/arm64
           - name: stac-browser
             context: dockerfiles
-            dockerfile: Dockerfile.browser
+            dockerfile: dockerfiles/Dockerfile.browser
             platforms: linux/amd64,linux/arm64
 
     steps:
