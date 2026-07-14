@@ -17,6 +17,7 @@ from tipg.database import close_db_connection, connect_to_db
 from tipg.dependencies import ResponseType, accept_media_type
 from tipg.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from tipg.factory import Endpoints as TiPgEndpoints
+from tipg.metrics import instrument_app
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.openapi import _update_openapi
 from tipg.resources.enums import MediaType
@@ -193,3 +194,5 @@ if auth_settings.openid_configuration_url:
             for prefix in restricted_prefixes
         ):
             oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
+
+instrument_app(app)
