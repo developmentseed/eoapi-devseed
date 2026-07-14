@@ -14,8 +14,6 @@ on:
       - '.pre-commit-config.yaml'
   pull_request:
   workflow_dispatch:
-  release:
-    types: [published]
 
 jobs:
   tests:
@@ -87,7 +85,9 @@ jobs:
       id-token: write
       contents: read
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
     env:
       STACK_NAME: eoapi-dev
 

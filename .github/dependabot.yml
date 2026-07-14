@@ -6,6 +6,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
     groups:
       python:
         patterns:
@@ -16,6 +20,10 @@ updates:
     directory: "/runtimes/eoapi/stac"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
     groups:
       stac:
         patterns:
@@ -25,6 +33,10 @@ updates:
     directory: "/runtimes/eoapi/raster"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
     groups:
       raster:
         patterns:
@@ -34,6 +46,10 @@ updates:
     directory: "/runtimes/eoapi/vector"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
     groups:
       vector:
         patterns:
@@ -44,18 +60,30 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
 
   # Docker base images, Dockerfiles, and docker-compose image pins
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
 
   # GitHub Actions workflow dependencies
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    commit-message:
+      prefix: chore
+      prefix-development: chore
+      include: scope
     groups:
       github-actions:
         patterns:

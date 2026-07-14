@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "python",
+      "include-v-in-tag": false,
+      "include-v-in-release-name": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "extra-files": [
+        "runtimes/eoapi/raster/eoapi/raster/__init__.py",
+        "runtimes/eoapi/stac/eoapi/stac/__init__.py",
+        "runtimes/eoapi/vector/eoapi/vector/__init__.py"
+      ]
+    }
+  }
+}
