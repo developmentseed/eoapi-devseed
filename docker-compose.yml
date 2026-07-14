@@ -1,4 +1,29 @@
 services:
+  traefik:
+    image: traefik:v3
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=eoapi-network
+      - --entrypoints.web.address=:8080
+    ports:
+      - "${MY_DOCKER_IP:-127.0.0.1}:8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.root.rule=Path(`/`)
+      - traefik.http.routers.root.entrypoints=web
+      - traefik.http.routers.root.middlewares=root-redirect
+      - traefik.http.routers.root.service=noop@internal
+      - traefik.http.middlewares.root-redirect.redirectregex.regex=^http://([^/]+)/?$
+      - traefik.http.middlewares.root-redirect.redirectregex.replacement=http://$${1}/browser/
+    depends_on:
+      - stac
+      - raster
+      - vector
+      - stac-browser
+
   stac-browser:
     build:
       context: dockerfiles
@@ -6,14 +31,12 @@ services:
       args:
         STAC_BROWSER_REPO: https://github.com/pantierra/stac-browser.git
         STAC_BROWSER_REF: 9c299f43c7d8506d5b655c0a1de3924ba38a1f63
-    ports:
-      - "${MY_DOCKER_IP:-127.0.0.1}:8085:8080"
     environment:
-      SB_pathPrefix: "${SB_pathPrefix:-/}"
-      SB_catalogUrl: "http://127.0.0.1:8081"
+      SB_pathPrefix: "${EOAPI_BROWSER_PATH_PREFIX:-/browser}"
+      SB_catalogUrl: "${EOAPI_STAC_BROWSER_CATALOG_URL:-http://127.0.0.1:8080/stac}"
       SB_catalogTitle: "eoAPI STAC Browser"
       SB_useTileLayerAsFallback: "true"
-      EOAPI_TILE_SERVER_BASE_URL: "${EOAPI_TILE_SERVER_BASE_URL:-http://127.0.0.1:8082}"
+      EOAPI_TILE_SERVER_BASE_URL: "${EOAPI_TILE_SERVER_BASE_URL:-http://127.0.0.1:8080/raster}"
     env_file:
       - path: .env
         required: false
@@ -23,13 +46,18 @@ services:
       - stac
       - raster
       - database
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stac-browser.rule=PathPrefix(`/browser`)
+      - traefik.http.routers.stac-browser.entrypoints=web
+      - traefik.http.routers.stac-browser.middlewares=stac-browser-stripprefix
+      - traefik.http.middlewares.stac-browser-stripprefix.stripprefix.prefixes=/browser
+      - traefik.http.services.stac-browser.loadbalancer.server.port=8080
 
   stac:
     build:
       context: .
       dockerfile: dockerfiles/Dockerfile.stac
-    ports:
-      - "${MY_DOCKER_IP:-127.0.0.1}:8081:8081"
     environment:
       - PYTHONUNBUFFERED=1
       # Application
@@ -42,7 +70,8 @@ services:
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=1
       # - TITILER_ENDPOINT=raster
-      - TITILER_ENDPOINT=http://127.0.0.1:8082
+      - ROOT_PATH=/stac
+      - TITILER_ENDPOINT=http://127.0.0.1:8080/raster
       # Transtaction Extension
       # - ENABLE_TRANSACTION=TRUE
       # - CORS_METHODS='GET,POST,PUT,OPTIONS'
@@ -54,6 +83,13 @@ services:
     depends_on:
       - database
     command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && uvicorn eoapi.stac.app:app --host 0.0.0.0 --port 8081 --workers 1"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stac.rule=PathPrefix(`/stac`)
+      - traefik.http.routers.stac.entrypoints=web
+      - traefik.http.routers.stac.middlewares=stac-stripprefix
+      - traefik.http.middlewares.stac-stripprefix.stripprefix.prefixes=/stac
+      - traefik.http.services.stac.loadbalancer.server.port=8081
     develop:
       watch:
         - action: sync+restart
@@ -71,8 +107,6 @@ services:
     build:
       context: .
       dockerfile: dockerfiles/Dockerfile.raster
-    ports:
-      - "${MY_DOCKER_IP:-127.0.0.1}:8082:8082"
     environment:
       - PYTHONUNBUFFERED=1
       # Application
@@ -93,6 +127,7 @@ services:
       - VSI_CACHE=TRUE
       - VSI_CACHE_SIZE=536870912
       - MOSAIC_CONCURRENCY=1
+      - ROOT_PATH=/raster
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
@@ -104,6 +139,13 @@ services:
     depends_on:
       - database
     command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && uvicorn eoapi.raster.app:app --host 0.0.0.0 --port 8082 --workers 10"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.raster.rule=PathPrefix(`/raster`)
+      - traefik.http.routers.raster.entrypoints=web
+      - traefik.http.routers.raster.middlewares=raster-stripprefix
+      - traefik.http.middlewares.raster-stripprefix.stripprefix.prefixes=/raster
+      - traefik.http.services.raster.loadbalancer.server.port=8082
     develop:
       watch:
         - action: sync+restart
@@ -118,8 +160,6 @@ services:
     build:
       context: .
       dockerfile: dockerfiles/Dockerfile.vector
-    ports:
-      - "${MY_DOCKER_IP:-127.0.0.1}:8083:8083"
     environment:
       - PYTHONUNBUFFERED=1
       # Application
@@ -131,12 +171,20 @@ services:
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=10
       - DEBUG=TRUE
+      - ROOT_PATH=/vector
     env_file:
       - path: .env
         required: false
       - path: .vector.env
         required: false
     command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && uvicorn eoapi.vector.app:app --host 0.0.0.0 --port 8083 --workers 10"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.vector.rule=PathPrefix(`/vector`)
+      - traefik.http.routers.vector.entrypoints=web
+      - traefik.http.routers.vector.middlewares=vector-stripprefix
+      - traefik.http.middlewares.vector-stripprefix.stripprefix.prefixes=/vector
+      - traefik.http.services.vector.loadbalancer.server.port=8083
     develop:
       watch:
         - action: sync+restart

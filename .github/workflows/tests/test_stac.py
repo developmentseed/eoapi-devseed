@@ -2,7 +2,7 @@
 
 import httpx
 
-stac_endpoint = "http://0.0.0.0:8081"
+stac_endpoint = "http://0.0.0.0:8080/stac"
 
 
 def test_stac_api():

@@ -66,9 +66,9 @@ jobs:
             return 1
           }
 
-          wait_for_service stac http://127.0.0.1:8081/_mgmt/ping
-          wait_for_service raster http://127.0.0.1:8082/healthz
-          wait_for_service vector http://127.0.0.1:8083/
+          wait_for_service stac http://127.0.0.1:8080/stac/_mgmt/ping
+          wait_for_service raster http://127.0.0.1:8080/raster/healthz
+          wait_for_service vector http://127.0.0.1:8080/vector/
         shell: bash
 
       - name: Integrations tests

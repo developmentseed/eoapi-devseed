@@ -93,11 +93,11 @@ Once the applications are *up*, you'll need to add STAC **Collections** and **It
 
 Then you can start exploring your dataset with:
 
-- the STAC Metadata service [http://localhost:8081](http://localhost:8081)
-- the Raster service [http://localhost:8082](http://localhost:8082)
-- the browser UI [http://localhost:8085](http://localhost:8085)
+- the STAC Metadata service [http://localhost:8080/stac](http://localhost:8080/stac)
+- the Raster service [http://localhost:8080/raster](http://localhost:8080/raster)
+- the browser UI [http://localhost:8080/browser](http://localhost:8080/browser)
 
-If you've added a vector dataset to the `public` schema in the Postgres database, they will be available through the **Vector** service at [http://localhost:8083](http://localhost:8083).
+If you've added a vector dataset to the `public` schema in the Postgres database, they will be available through the **Vector** service at [http://localhost:8080/vector](http://localhost:8080/vector).
 
 ## Deployment
 
