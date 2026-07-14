@@ -2,8 +2,9 @@
 #
 # Requires DNS A records for EOAPI_DOMAIN and auth.EOAPI_DOMAIN pointing at the server.
 #
-#   COMPOSE_FILE=docker-compose.yml:docker-compose.mock-oidc.yml:infrastructure/docker-compose.hetzner.yml \
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.mock-oidc.yml:docker-compose.metrics.yml:infrastructure/docker-compose.hetzner.yml \
 #   EOAPI_DOMAIN=eoapi.ds.io \
+#   EOAPI_GRAFANA_ROOT_URL=https://eoapi.ds.io/monitoring/ \
 #   ACME_EMAIL=you@example.com \
 #   docker compose up -d
 
@@ -89,6 +90,31 @@ services:
       - traefik.http.routers.vector.tls.certresolver=letsencrypt
       - traefik.http.middlewares.vector-stripprefix.stripprefix.prefixes=/vector
       - traefik.http.services.vector.loadbalancer.server.port=8083
+
+  grafana:
+    environment:
+      GF_AUTH_GENERIC_OAUTH_AUTH_URL: https://auth.${EOAPI_DOMAIN}/authorize
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`${EOAPI_DOMAIN}`) && PathPrefix(`/monitoring`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.middlewares=forwarded-headers
+      - traefik.http.routers.grafana.tls.certresolver=letsencrypt
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+
+  traffic-simulator:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    restart: unless-stopped
+    depends_on:
+      - traefik
+    environment:
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./scripts:/app/scripts:ro
+    command:
+      - bash
+      - -c
+      - uv run --with httpx /app/scripts/simulate_traffic_loop.py --base-url https://${EOAPI_DOMAIN}
 
   mock-oidc:
     ports: !reset []

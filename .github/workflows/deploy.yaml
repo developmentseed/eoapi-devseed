@@ -33,7 +33,7 @@ jobs:
     environment: hetzner
     env:
       ACME_EMAIL: ${{ vars.ACME_EMAIL }}
-      COMPOSE_FILE: docker-compose.yml:docker-compose.mock-oidc.yml:infrastructure/docker-compose.hetzner.yml
+      COMPOSE_FILE: docker-compose.yml:docker-compose.mock-oidc.yml:docker-compose.metrics.yml:infrastructure/docker-compose.hetzner.yml
       DEPLOY_PATH: /home/user/deploy
       DEPLOY_USER: user
       EOAPI_DOMAIN: ${{ vars.EOAPI_DOMAIN }}
@@ -146,6 +146,7 @@ jobs:
             "cd '${DEPLOY_PATH}' && \
              export COMPOSE_FILE='${COMPOSE_FILE}' && \
              export EOAPI_DOMAIN='${EOAPI_DOMAIN}' && \
+             export EOAPI_GRAFANA_ROOT_URL='https://${EOAPI_DOMAIN}/monitoring/' && \
              export ACME_EMAIL='${ACME_EMAIL}' && \
              docker compose down && \
              bash .github/workflows/ingest.sh --wipe-pgdata-only && \
@@ -154,6 +155,17 @@ jobs:
              docker compose --profile ingest run --rm ingest && \
              docker compose restart vector && \
              docker compose ps"
+
+      - name: Install demo refresh cron
+        run: |
+          ssh $SSH_OPTS "${DEPLOY_USER}@${EOAPI_DOMAIN}" \
+            "cd '${DEPLOY_PATH}' && \
+             export DEPLOY_PATH='${DEPLOY_PATH}' && \
+             export EOAPI_DOMAIN='${EOAPI_DOMAIN}' && \
+             export EOAPI_GRAFANA_ROOT_URL='https://${EOAPI_DOMAIN}/monitoring/' && \
+             export ACME_EMAIL='${ACME_EMAIL}' && \
+             export COMPOSE_FILE='${COMPOSE_FILE}' && \
+             bash scripts/install_demo_cron.sh"
 
       - name: Wait for services
         run: |

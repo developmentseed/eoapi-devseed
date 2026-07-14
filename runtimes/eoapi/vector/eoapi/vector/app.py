@@ -193,3 +193,12 @@ if auth_settings.openid_configuration_url:
             for prefix in restricted_prefixes
         ):
             oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
+
+try:
+    from .metrics import instrument_app
+
+    instrument_app(app)
+except ImportError:
+    logger.warning(
+        "prometheus-fastapi-instrumentator not installed; metrics endpoint disabled"
+    )

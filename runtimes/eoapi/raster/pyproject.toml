@@ -24,6 +24,7 @@ dependencies = [
     "starlette-cramjam>=0.4,<0.6",
     "boto3",
     "eoapi.auth-utils>=0.2.0",
+    "prometheus-fastapi-instrumentator>=8.0.2",
 ]
 
 [project.optional-dependencies]
