@@ -211,7 +211,7 @@ wheels = [
 
 [[package]]
 name = "eoapi-devseed"
-version = "0.3.3"
+version = "0.3.4"
 source = { virtual = "." }
 
 [package.dev-dependencies]

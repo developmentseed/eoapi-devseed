@@ -233,14 +233,14 @@ api = StacApi(
 app = api.app
 
 
-@app.get("/index.html", response_class=HTMLResponse)
+@app.get("/viewer", response_class=HTMLResponse)
 async def viewer_page(request: Request):
     """Search viewer."""
     return templates.TemplateResponse(
         request,
         name="stac-viewer.html",
         context={
-            "endpoint": str(request.url).replace("/index.html", ""),
+            "endpoint": str(request.url).replace("/viewer", ""),
         },
         media_type="text/html",
     )

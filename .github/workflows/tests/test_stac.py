@@ -11,7 +11,7 @@ def test_stac_api():
     assert httpx.get(f"{stac_endpoint}/_mgmt/ping").status_code == 200
 
     # viewer
-    assert httpx.get(f"{stac_endpoint}/index.html").status_code == 200
+    assert httpx.get(f"{stac_endpoint}/viewer").status_code == 200
 
     # Collections
     resp = httpx.get(f"{stac_endpoint}/collections")

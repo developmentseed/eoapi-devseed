@@ -12,6 +12,19 @@ def test_raster_api():
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/json"
 
+    # landing
+    resp = httpx.get(f"{raster_endpoint}/")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "application/json"
+    links = {link["title"]: link["href"] for link in resp.json()["links"]}
+    assert links["eoAPI Virtual Mosaic (Search) builder"].startswith("http")
+
+    # mosaic builder
+    resp = httpx.get(f"{raster_endpoint}/searches/builder")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "text/html; charset=utf-8"
+    assert "Mosaic Builder" in resp.text
+
 
 def test_mosaic_api():
     """test mosaic."""

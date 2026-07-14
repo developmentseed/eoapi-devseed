@@ -210,9 +210,9 @@ async def virtual_mosaic_builder(request: Request):
     """Mosaic Builder Viewer."""
     base_url = str(request.base_url)
     return templates.TemplateResponse(
+        request,
         name="mosaic-builder.html",
         context={
-            "request": request,
             "register_endpoint": str(
                 app.url_path_for("register_search").make_absolute_url(base_url=base_url)
             ),
@@ -260,9 +260,9 @@ def viewer(request: Request, item: pystac.Item = Depends(stac.path_dependency)):
     Simplified version of https://github.com/developmentseed/titiler/blob/main/src/titiler/extensions/titiler/extensions/templates/stac_viewer.html
     """
     return templates.TemplateResponse(
+        request,
         name="stac-viewer.html",
         context={
-            "request": request,
             "endpoint": request.url.path.replace("/viewer", ""),
         },
         media_type="text/html",
@@ -415,20 +415,20 @@ def landing(
             },
             {
                 "title": "eoAPI Virtual Mosaic list (JSON)",
-                "href": str(app.url_path_for("list_searches")),
+                "href": str(request.url_for("list_searches")),
                 "type": "application/json",
                 "rel": "data",
             },
             {
                 "title": "eoAPI Virtual Mosaic (Search) builder",
-                "href": str(app.url_path_for("virtual_mosaic_builder")),
+                "href": str(request.url_for("virtual_mosaic_builder")),
                 "type": "text/html",
                 "rel": "data",
             },
             {
                 "title": "eoAPI Virtual Mosaic (Search) viewer (template URL)",
                 "href": str(
-                    app.url_path_for(
+                    request.url_for(
                         "map_viewer",
                         search_id="{search_id}",
                         tileMatrixSetId="{tileMatrixSetId}",
@@ -441,7 +441,7 @@ def landing(
             {
                 "title": "eoAPI Collection viewer (template URL)",
                 "href": str(
-                    app.url_path_for(
+                    request.url_for(
                         "map_viewer",
                         collection_id="{collection_id}",
                         tileMatrixSetId="{tileMatrixSetId}",
@@ -454,7 +454,7 @@ def landing(
             {
                 "title": "eoAPI Item viewer (template URL)",
                 "href": str(
-                    app.url_path_for(
+                    request.url_for(
                         "map_viewer",
                         collection_id="{collection_id}",
                         item_id="{item_id}",

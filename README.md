@@ -31,7 +31,7 @@ Built on [stac-fastapi.pgstac](https://github.com/stac-utils/stac-fastapi-pgstac
   - `/collections/{collectionId}/items/{itemId}/tilejson.json`: Return the `raster` tilejson for an item
   - `/collections/{collectionId}/items/{itemId}/viewer`: Redirect to the `raster` viewer
 
-- a simple **`Search Viewer`** (`/index.html`)
+- a simple **`Search Viewer`** (`/viewer`)
 
 <p align="center">
   <img width="800" alt="stac-search" src="https://github.com/user-attachments/assets/d08b8b3c-ac3f-421c-ba5c-f6a9eae02964">
@@ -94,8 +94,12 @@ Once the applications are *up*, you'll need to add STAC **Collections** and **It
 Then you can start exploring your dataset with:
 
 - the STAC Metadata service [http://localhost:8080/stac](http://localhost:8080/stac)
+- the STAC Search viewer [http://localhost:8080/stac/viewer](http://localhost:8080/stac/viewer)
 - the Raster service [http://localhost:8080/raster](http://localhost:8080/raster)
+- the Raster mosaic builder [http://localhost:8080/raster/searches/builder](http://localhost:8080/raster/searches/builder)
 - the browser UI [http://localhost:8080/browser](http://localhost:8080/browser)
+
+Item map viewers are available at `/raster/collections/{collection_id}/items/{item_id}/viewer`, or via a redirect from the STAC API at `/stac/collections/{collection_id}/items/{item_id}/viewer`.
 
 If you've added a vector dataset to the `public` schema in the Postgres database, they will be available through the **Vector** service at [http://localhost:8080/vector](http://localhost:8080/vector).
 
