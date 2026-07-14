@@ -7,6 +7,19 @@
       "include-v-in-release-name": false,
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
+      "changelog-sections": [
+        { "type": "feat", "section": "Added" },
+        { "type": "fix", "section": "Fixed" },
+        { "type": "refactor", "section": "Changed" },
+        { "type": "chore", "section": "Maintenance", "hidden": false },
+        { "type": "docs", "section": "Other", "hidden": false },
+        { "type": "test", "section": "Other", "hidden": false },
+        { "type": "ci", "section": "Other", "hidden": false },
+        { "type": "perf", "section": "Other", "hidden": false },
+        { "type": "build", "section": "Other", "hidden": false },
+        { "type": "style", "section": "Other", "hidden": false },
+        { "type": "revert", "section": "Other", "hidden": false }
+      ],
       "extra-files": [
         "runtimes/eoapi/raster/eoapi/raster/__init__.py",
         "runtimes/eoapi/stac/eoapi/stac/__init__.py",
