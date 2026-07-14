@@ -224,8 +224,31 @@ services:
     ports:
       - "${MY_DOCKER_IP:-127.0.0.1}:5439:5432"
     command: postgres -N 500
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U username -d postgis"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     volumes:
       - ./.pgdata:/var/lib/postgresql/data
+
+  ingest:
+    image: ghcr.io/astral-sh/uv:python3.12-bookworm-slim
+    profiles: ["ingest"]
+    depends_on:
+      database:
+        condition: service_healthy
+    environment:
+      PGUSER: username
+      PGPASSWORD: password
+      PGHOST: database
+      PGPORT: 5432
+      PGDATABASE: postgis
+    volumes:
+      - ./.github/workflows:/workflows:ro
+    entrypoint: ["/bin/bash", "/workflows/ingest.sh"]
+    restart: "no"
 
 networks:
   default:

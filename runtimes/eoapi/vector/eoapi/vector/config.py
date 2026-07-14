@@ -36,7 +36,7 @@ def get_secret_dict(secret_name: str) -> Dict:
 class ApiSettings(BaseSettings):
     """API settings"""
 
-    name: str = "eoAPI-vector"
+    name: str = "tipg"
     cors_origins: str = "*"
     cors_methods: str = "GET"
     cachecontrol: str = "public, max-age=3600"

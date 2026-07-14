@@ -147,8 +147,12 @@ jobs:
              export COMPOSE_FILE='${COMPOSE_FILE}' && \
              export EOAPI_DOMAIN='${EOAPI_DOMAIN}' && \
              export ACME_EMAIL='${ACME_EMAIL}' && \
+             docker compose down && \
+             bash .github/workflows/ingest.sh --wipe-pgdata-only && \
              docker compose pull --ignore-pull-failures && \
              docker compose up -d --build --remove-orphans && \
+             docker compose --profile ingest run --rm ingest && \
+             docker compose restart vector && \
              docker compose ps"
 
       - name: Wait for services

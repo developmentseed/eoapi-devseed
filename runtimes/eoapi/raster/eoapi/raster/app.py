@@ -387,7 +387,7 @@ def landing(
         return RedirectResponse(url=str(request.url_for("swagger_ui_html")))
 
     data = {
-        "title": settings.name or "eoAPI-Raster",
+        "title": settings.name or "titiler",
         "links": [
             {
                 "title": "Landing page",

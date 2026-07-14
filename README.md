@@ -99,7 +99,29 @@ docker compose -f docker-compose.yml -f docker-compose.mock-oidc.yml up --watch
 docker compose up --watch
 ```
 
-Once the applications are *up*, you'll need to add STAC **Collections** and **Items** to the PgSTAC database. If you don't have, you can use the follow the [MAXAR open data demo](https://github.com/vincentsarago/MAXAR_opendata_to_pgstac) (or get inspired by the other [demos](https://github.com/developmentseed/eoAPI/tree/main/demo)).
+Once the applications are *up*, load the standard [EOEPCA sentinel-2-iceland](https://github.com/EOEPCA/deployment-guide/tree/main/scripts/data-access/collections) seed collection:
+
+```
+docker compose --profile ingest run --rm ingest
+docker compose restart vector
+```
+
+Or from the host with project dependencies installed:
+
+```
+uv sync --group dev
+./.github/workflows/ingest.sh
+docker compose restart vector
+```
+
+To wipe the local database and reload from scratch:
+
+```
+./.github/workflows/ingest.sh --wipe-db
+docker compose restart vector
+```
+
+You can also add your own STAC **Collections** and **Items** — see the [MAXAR open data demo](https://github.com/vincentsarago/MAXAR_opendata_to_pgstac) (or get inspired by the other [demos](https://github.com/developmentseed/eoAPI/tree/main/demo)).
 
 Then you can start exploring your dataset with:
 
