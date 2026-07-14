@@ -1,0 +1,29 @@
+# Optional overlay: local mock OIDC server for stac-auth-proxy.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.mock-oidc.yml up
+#
+# Without this file, set EOAPI_AUTH_OIDC_DISCOVERY_URL (and optionally
+# EOAPI_AUTH_OIDC_DISCOVERY_INTERNAL_URL) in .env to your identity provider.
+
+services:
+  mock-oidc:
+    image: ghcr.io/alukach/mock-oidc-server:latest
+    ports:
+      - "${MY_DOCKER_IP:-127.0.0.1}:8085:8888"
+    environment:
+      ISSUER: http://localhost:8085
+      PORT: "8888"
+      SCOPES: stac:read,stac:write
+
+  stac-auth-proxy:
+    environment:
+      OIDC_DISCOVERY_URL: http://localhost:8085/.well-known/openid-configuration
+      OIDC_DISCOVERY_INTERNAL_URL: http://mock-oidc:8888/.well-known/openid-configuration
+      SWAGGER_UI_INIT_OAUTH: '{"clientId":"stac-browser","usePkceWithAuthorizationCodeGrant":true}'
+    depends_on:
+      mock-oidc:
+        condition: service_started
+
+  stac-browser:
+    environment:
+      SB_authConfig: '{"type":"openIdConnect","openIdConnectUrl":"http://localhost:8085/.well-known/openid-configuration","oidcConfig":{"client_id":"stac-browser"}}'

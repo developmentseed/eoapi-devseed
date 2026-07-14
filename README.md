@@ -83,7 +83,17 @@ The CDK code is almost similar to the one found in [eoapi-template](https://gith
 
 ### Local testing
 
-Before deploying the application on the cloud, you can start by exploring it with a local *Docker* deployment
+Before deploying the application on the cloud, you can start by exploring it with a local *Docker* deployment.
+
+The STAC API runs with the **transaction** extension enabled and is fronted by [stac-auth-proxy](https://github.com/developmentseed/stac-auth-proxy). Read operations are public; writes require a bearer token.
+
+**Local development** (mock OIDC server on port 8085):
+
+```
+docker compose -f docker-compose.yml -f docker-compose.mock-oidc.yml up --watch
+```
+
+**Custom identity provider** — set `EOAPI_AUTH_OIDC_DISCOVERY_URL` in `.env` (see `.env.example`). To enable login in STAC Browser, also set `SB_authConfig` with the identity provider's discovery URL and browser client ID. Without `SB_authConfig`, writes can still be made by clients that supply a valid bearer token. Then run:
 
 ```
 docker compose up --watch

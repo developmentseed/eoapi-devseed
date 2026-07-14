@@ -19,7 +19,7 @@ services:
       - traefik.http.middlewares.root-redirect.redirectregex.regex=^http://([^/]+)/?$
       - traefik.http.middlewares.root-redirect.redirectregex.replacement=http://$${1}/browser/
     depends_on:
-      - stac
+      - stac-auth-proxy
       - raster
       - vector
       - stac-browser
@@ -33,9 +33,10 @@ services:
         STAC_BROWSER_REF: 9c299f43c7d8506d5b655c0a1de3924ba38a1f63
     environment:
       SB_pathPrefix: "${EOAPI_BROWSER_PATH_PREFIX:-/browser}"
-      SB_catalogUrl: "${EOAPI_STAC_BROWSER_CATALOG_URL:-http://localhost:8080/stac}"
+      SB_catalogUrl: "${EOAPI_STAC_BROWSER_CATALOG_URL:-/stac}"
       SB_catalogTitle: "eoAPI STAC Browser"
       SB_useTileLayerAsFallback: "false"
+      SB_historyMode: history
       EOAPI_TILE_SERVER_BASE_URL: "${EOAPI_TILE_SERVER_BASE_URL:-http://127.0.0.1:8080/raster}"
     env_file:
       - path: .env
@@ -43,7 +44,7 @@ services:
       - path: .stac-browser.env
         required: false
     depends_on:
-      - stac
+      - stac-auth-proxy
       - raster
       - database
     labels:
@@ -70,9 +71,8 @@ services:
       # - TITILER_ENDPOINT=raster
       - ROOT_PATH=/stac
       - TITILER_ENDPOINT=http://127.0.0.1:8080/raster
-      # Transtaction Extension
-      # - ENABLE_TRANSACTION=TRUE
-      # - CORS_METHODS='GET,POST,PUT,OPTIONS'
+      - ENABLE_TRANSACTION=true
+      - CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS
     env_file:
       - path: .env
         required: false
@@ -81,13 +81,6 @@ services:
     depends_on:
       - database
     command: bash -c "bash /tmp/scripts/wait-for-it.sh -t 120 -h database -p 5432 && uvicorn eoapi.stac.app:app --host 0.0.0.0 --port 8081 --workers 1"
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.stac.rule=PathPrefix(`/stac`)
-      - traefik.http.routers.stac.entrypoints=web
-      - traefik.http.routers.stac.middlewares=stac-stripprefix
-      - traefik.http.middlewares.stac-stripprefix.stripprefix.prefixes=/stac
-      - traefik.http.services.stac.loadbalancer.server.port=8081
     develop:
       watch:
         - action: sync+restart
@@ -97,6 +90,27 @@ services:
           path: ./runtimes/eoapi/stac
     volumes:
       - ./dockerfiles/scripts:/tmp/scripts
+
+  stac-auth-proxy:
+    image: ghcr.io/developmentseed/stac-auth-proxy:v1.1.1@sha256:c827a67bfd8e2eee6ed5be46d1a99d3aca307e18f154316e719d2332d15ea4ef
+    environment:
+      UPSTREAM_URL: http://stac:8081
+      OIDC_DISCOVERY_URL: ${EOAPI_AUTH_OIDC_DISCOVERY_URL:-}
+      OIDC_DISCOVERY_INTERNAL_URL: ${EOAPI_AUTH_OIDC_DISCOVERY_INTERNAL_URL:-}
+      DEFAULT_PUBLIC: "true"
+      OVERRIDE_HOST: "false"
+      ROOT_PATH: /stac
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      stac:
+        condition: service_started
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stac.rule=PathPrefix(`/stac`)
+      - traefik.http.routers.stac.entrypoints=web
+      - traefik.http.services.stac.loadbalancer.server.port=8000
 
   raster:
     # At the time of writing, rasterio wheels are not available for arm64 arch
