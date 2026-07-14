@@ -55,7 +55,7 @@ jobs:
             url="$2"
 
             for _ in $(seq 1 60); do
-              if curl --fail --silent --show-error --output /dev/null "$url"; then
+              if curl --fail --silent --output /dev/null "$url"; then
                 echo "$name is ready"
                 return 0
               fi
