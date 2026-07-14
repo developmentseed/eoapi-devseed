@@ -1,13 +1,15 @@
 services:
-  # change to official image when available https://github.com/radiantearth/stac-browser/pull/386
   stac-browser:
-    # build: https://github.com/radiantearth/stac-browser.git
-    # TODO: Rm when https://github.com/radiantearth/stac-browser/pull/461 is merged
     build:
       context: dockerfiles
       dockerfile: Dockerfile.browser
+      args:
+        SB_CONFIG: browser_config.mjs
     ports:
-      - "${MY_DOCKER_IP:-127.0.0.1}:8085:8085"
+      - "${MY_DOCKER_IP:-127.0.0.1}:8085:8080"
+    environment:
+      SB_catalogUrl: "http://127.0.0.1:8081"
+      SB_catalogTitle: "eoAPI STAC Browser"
     env_file:
       - path: .env
         required: false
