@@ -1,34 +1,51 @@
-# Copyright Radiant Earth Foundation
+# Based on https://github.com/radiantearth/stac-browser/pull/930
+# Commit lives on the PR author's fork until merged upstream.
+ARG STAC_BROWSER_REPO=https://github.com/pantierra/stac-browser.git
+ARG STAC_BROWSER_REF=9c299f43c7d8506d5b655c0a1de3924ba38a1f63
 
-FROM node:lts-alpine3.18 AS build-step
-ARG DYNAMIC_CONFIG=true
+FROM node:lts-alpine AS build-step
+ARG runtimeConfig=true
+ARG historyMode="history"
+ARG SB_CONFIG=""
+ARG STAC_BROWSER_REPO
+ARG STAC_BROWSER_REF
+ENV SB_runtimeConfig="${runtimeConfig}"
+ENV SB_historyMode="${historyMode}"
+ENV SB_CONFIG="${SB_CONFIG}"
 
 WORKDIR /app
 
 RUN apk add --no-cache git
-RUN git clone https://github.com/radiantearth/stac-browser.git .
-# remove the default config.js
-RUN rm config.js
+RUN git clone "${STAC_BROWSER_REPO}" . && \
+    git checkout "${STAC_BROWSER_REF}"
+
 RUN npm install
-# replace the default config.js with our config file
-COPY ./browser_config.js ./config.js
-RUN \[ "${DYNAMIC_CONFIG}" == "true" \] && sed -i "s|<!-- <script defer=\"defer\" src=\"/config.js\"></script> -->|<script defer=\"defer\" src=\"${pathPrefix}config.js\"></script>|g" public/index.html
 RUN npm run build
 
 
-FROM nginx:1-alpine-slim
+FROM nginxinc/nginx-unprivileged:1-alpine
+ARG pathPrefix="/"
 
-COPY --from=build-step /app/dist /usr/share/nginx/html
+USER root
+RUN apk add --no-cache jq pcre-tools gettext
+
 COPY --from=build-step /app/config.schema.json /etc/nginx/conf.d/config.schema.json
+COPY --from=build-step /app/dist /usr/share/nginx/html
+COPY --from=build-step /app/docker/default.conf /etc/nginx/conf.d/default.conf.template
+COPY --from=build-step /app/docker/docker-entrypoint.sh /docker-entrypoint.d/40-stac-browser-entrypoint.sh
+COPY scripts/tile-config-entrypoint.sh /docker-entrypoint.d/41-tile-config-entrypoint.sh
 
-# change default port to 8085
-RUN apk add jq pcre-tools && \
-    sed -i 's/\s*listen\s*80;/    listen 8085;/' /etc/nginx/conf.d/default.conf && \
-    sed -i 's/\s*location \/ {/    location \/ {\n        try_files $uri $uri\/ \/index.html;/' /etc/nginx/conf.d/default.conf
+# Remove the base image default server config so nginx fails loudly if the
+# entrypoint (which renders default.conf.template) is bypassed.
+RUN rm -f /etc/nginx/conf.d/default.conf && \
+    chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod +x /docker-entrypoint.d/40-stac-browser-entrypoint.sh && \
+    chmod +x /docker-entrypoint.d/41-tile-config-entrypoint.sh
 
-EXPOSE 8085
+ENV SB_pathPrefix="${pathPrefix}"
+
+EXPOSE 8080
 
 STOPSIGNAL SIGTERM
 
-# override entrypoint, which calls nginx-entrypoint underneath
-ADD ./docker-entrypoint.sh ./docker-entrypoint.d/40-stac-browser-entrypoint.sh
+USER nginx

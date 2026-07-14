@@ -1,13 +1,19 @@
 services:
-  # change to official image when available https://github.com/radiantearth/stac-browser/pull/386
   stac-browser:
-    # build: https://github.com/radiantearth/stac-browser.git
-    # TODO: Rm when https://github.com/radiantearth/stac-browser/pull/461 is merged
     build:
       context: dockerfiles
       dockerfile: Dockerfile.browser
+      args:
+        STAC_BROWSER_REPO: https://github.com/pantierra/stac-browser.git
+        STAC_BROWSER_REF: 9c299f43c7d8506d5b655c0a1de3924ba38a1f63
     ports:
-      - "${MY_DOCKER_IP:-127.0.0.1}:8085:8085"
+      - "${MY_DOCKER_IP:-127.0.0.1}:8085:8080"
+    environment:
+      SB_pathPrefix: "${SB_pathPrefix:-/}"
+      SB_catalogUrl: "http://127.0.0.1:8081"
+      SB_catalogTitle: "eoAPI STAC Browser"
+      SB_useTileLayerAsFallback: "true"
+      EOAPI_TILE_SERVER_BASE_URL: "${EOAPI_TILE_SERVER_BASE_URL:-http://127.0.0.1:8082}"
     env_file:
       - path: .env
         required: false

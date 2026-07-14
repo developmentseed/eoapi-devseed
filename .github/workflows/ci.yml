@@ -48,8 +48,29 @@ jobs:
         run: |
           docker compose restart vector
 
-      - name: Sleep for 10 seconds
-        run: sleep 10s
+      - name: Wait for services
+        run: |
+          wait_for_service() {
+            name="$1"
+            url="$2"
+
+            for _ in $(seq 1 60); do
+              if curl --fail --silent --show-error --output /dev/null "$url"; then
+                echo "$name is ready"
+                return 0
+              fi
+              sleep 1
+            done
+
+            echo "$name did not become ready at $url"
+            docker compose ps
+            docker compose logs "$name"
+            return 1
+          }
+
+          wait_for_service stac http://127.0.0.1:8081/_mgmt/ping
+          wait_for_service raster http://127.0.0.1:8082/healthz
+          wait_for_service vector http://127.0.0.1:8083/
         shell: bash
 
       - name: Integrations tests
