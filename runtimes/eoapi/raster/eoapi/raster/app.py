@@ -14,7 +14,7 @@ from psycopg.rows import dict_row
 from psycopg_pool import PoolTimeout
 from starlette.middleware.cors import CORSMiddleware
 from starlette.requests import Request
-from starlette.responses import HTMLResponse
+from starlette.responses import HTMLResponse, RedirectResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 from titiler.core import __version__ as titiler_version
@@ -383,6 +383,9 @@ def landing(
     ] = None,
 ):
     """TiTiler landing page."""
+    if f == "html":
+        return RedirectResponse(url=str(request.url_for("swagger_ui_html")))
+
     data = {
         "title": settings.name or "eoAPI-Raster",
         "links": [
@@ -495,23 +498,17 @@ def landing(
         ],
     }
 
-    if f:
-        output_type = MediaType[f]
-    else:
-        accepted_media = [MediaType.html, MediaType.json]
-        output_type = (
-            accept_media_type(request.headers.get("accept", ""), accepted_media)
-            or MediaType.json
-        )
+    if f == "json":
+        return data
+
+    accepted_media = [MediaType.html, MediaType.json]
+    output_type = (
+        accept_media_type(request.headers.get("accept", ""), accepted_media)
+        or MediaType.json
+    )
 
     if output_type == MediaType.html:
-        return create_html_response(
-            request,
-            data,
-            "landing",
-            title="eoAPI-raster",
-            templates=templates,
-        )
+        return RedirectResponse(url=str(request.url_for("swagger_ui_html")))
 
     return data
 

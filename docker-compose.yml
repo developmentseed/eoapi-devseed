@@ -50,8 +50,6 @@ services:
       - traefik.enable=true
       - traefik.http.routers.stac-browser.rule=PathPrefix(`/browser`)
       - traefik.http.routers.stac-browser.entrypoints=web
-      - traefik.http.routers.stac-browser.middlewares=stac-browser-stripprefix
-      - traefik.http.middlewares.stac-browser-stripprefix.stripprefix.prefixes=/browser
       - traefik.http.services.stac-browser.loadbalancer.server.port=8080
 
   stac:

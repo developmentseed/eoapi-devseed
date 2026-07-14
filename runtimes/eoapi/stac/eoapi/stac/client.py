@@ -36,7 +36,7 @@ from stac_fastapi.types.stac import (
 )
 from stac_pydantic.links import Relations
 from stac_pydantic.shared import BBox, MimeTypes
-from starlette.responses import StreamingResponse
+from starlette.responses import RedirectResponse, StreamingResponse
 from starlette.templating import Jinja2Templates, _TemplateResponse
 
 ResponseType = Literal["json", "html"]
@@ -286,24 +286,22 @@ class PgSTACClient(CoreCrudClient):
         """
         request: Request = kwargs["request"]
 
+        if f == "html":
+            return RedirectResponse(url=str(request.url_for("swagger_ui_html")))
+
         landing = await super().landing_page(**kwargs)
 
-        if f:
-            output_type = MimeTypes[f]
-        else:
-            accepted_media = [MimeTypes[v] for v in get_args(ResponseType)]
-            output_type = (
-                accept_media_type(request.headers.get("accept", ""), accepted_media)
-                or MimeTypes.json
-            )
+        if f == "json":
+            return landing
+
+        accepted_media = [MimeTypes[v] for v in get_args(ResponseType)]
+        output_type = (
+            accept_media_type(request.headers.get("accept", ""), accepted_media)
+            or MimeTypes.json
+        )
 
         if output_type == MimeTypes.html:
-            return create_html_response(
-                request,
-                landing,
-                template_name="landing",
-                title=landing["title"],
-            )
+            return RedirectResponse(url=str(request.url_for("swagger_ui_html")))
 
         return landing
 

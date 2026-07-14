@@ -3,19 +3,23 @@
 import logging
 from contextlib import asynccontextmanager
 from importlib.resources import files as resources_files
+from typing import get_args
 
 import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import FastAPI, Request
 from starlette.middleware.cors import CORSMiddleware
+from starlette.responses import RedirectResponse
 from starlette.templating import Jinja2Templates
 from starlette_cramjam.middleware import CompressionMiddleware
 from tipg.collections import register_collection_catalog
 from tipg.database import close_db_connection, connect_to_db
+from tipg.dependencies import ResponseType, accept_media_type
 from tipg.errors import DEFAULT_STATUS_CODES, add_exception_handlers
 from tipg.factory import Endpoints as TiPgEndpoints
 from tipg.middleware import CacheControlMiddleware, CatalogUpdateMiddleware
 from tipg.openapi import _update_openapi
+from tipg.resources.enums import MediaType
 from tipg.settings import DatabaseSettings
 
 from . import __version__ as eoapi_vector_version
@@ -120,6 +124,27 @@ if settings.catalog_ttl:
     )
 
 add_exception_handlers(app, DEFAULT_STATUS_CODES)
+
+
+@app.middleware("http")
+async def redirect_landing_to_docs(request: Request, call_next):
+    """Send browser landing-page requests to the OpenAPI docs."""
+    if request.method != "GET" or request.scope.get("path") != "/":
+        return await call_next(request)
+
+    f = request.query_params.get("f")
+    if f == "html":
+        return RedirectResponse(url=str(request.url_for("swagger_ui_html")))
+
+    if f == "json":
+        return await call_next(request)
+
+    accepted_media = [MediaType[v] for v in get_args(ResponseType)]
+    output_type = accept_media_type(request.headers.get("accept", ""), accepted_media)
+    if output_type == MediaType.html:
+        return RedirectResponse(url=str(request.url_for("swagger_ui_html")))
+
+    return await call_next(request)
 
 
 @app.get(
