@@ -66,14 +66,18 @@
         </p>
         {% if asset.type %}<p class="mb-0">{{ asset.type }}</p>{% endif %}
         {% if asset.description %}<p class="mb-0">{{ asset.description }}</p>{% endif %}
+        {% if asset.href or asset.alternate %}
         <ul class="list-inline">
+          {% if asset.href %}
           <li class="list-inline-item"><a href="{{ asset.href }}">Asset link</a></li>
+          {% endif %}
           {% if asset.alternate %}
           {% for alternate_key, alternate_link in asset.alternate.items() %}
           <li class="list-inline-item"><a href="{{ alternate_link.href }}">{{ alternate_link.title or alternate_key }}</a></li>
           {% endfor %}
           {% endif %}
         </ul>
+        {% endif %}
         {% if asset.roles and asset.roles|length > 0 %}
         <ul class="list-inline">
           {% for role in asset.roles %}
@@ -88,7 +92,7 @@
           <div class="row mb-1 small">
             <div class="col-3 font-weight-bold">{{ asset_key }}</div>
             <div class="col-9">
-              <pre class="mb-0">{{ asset_opt | tojson(2) | trim('"') }}</pre>
+              <pre class="mb-0">{{ asset_opt | tojson(2) }}</pre>
             </div>
           </div>
           {% else %}
@@ -108,19 +112,12 @@
         <p class="small text-monospace text-muted mb-0">{{ key }}</p>
         {% if option.title %}<p class="mb-0"><b>{{ option.title }}</b></p>{% endif %}
 
-        <div class="row">
-          <div class="col-3">assets</div>
-          <div class="col-9">
-            <pre class="mb-0">{% for asset in option.assets %}{{ asset }}{% if not loop.last %}, {% endif%}{% endfor %}</pre>
-          </div>
-        </div>
-
         {% for render_key, render_opt in option.items() %}
-        {% if render_key != 'title' and render_key != 'assets' %}
+        {% if render_key != 'title' %}
         <div class="row">
           <div class="col-3">{{ render_key }}</div>
           <div class="col-9">
-            <pre class="mb-0">{{ render_opt | tojson(2) | trim('"') }}</pre>
+            <pre class="mb-0">{{ render_opt | tojson(2) }}</pre>
           </div>
         </div>
         {% endif %}
