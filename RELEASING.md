@@ -1,13 +1,24 @@
 # Releasing
 
-This is a checklist for releasing a new version of **eoapi-devsee**.
+Releases are automated with [release-please](https://github.com/googleapis/release-please), using the same `DS_RELEASE_BOT_*` GitHub App secrets as [eoapi-k8s](https://github.com/developmentseed/eoapi-k8s).
 
-1. Make sure the [Changelog](CHANGES.md) is up to date with latest changes and release date set
+## How it works
 
-2. Run [`bump-my-version`](https://callowayproject.github.io/bump-my-version/) to update all eoapi's module versions: `uv run bump-my-version bump minor --new-version 0.4.0`
+1. Merge pull requests to `main` using [Conventional Commits](https://www.conventionalcommits.org/):
+   - `feat:` for new features (minor bump)
+   - `fix:` for bug fixes (patch bump)
+   - `feat!:` or `BREAKING CHANGE:` for breaking changes (major bump)
 
-3. Push your change and tag `git push origin main --tags`
+2. Release Please opens a release PR that updates:
+   - `CHANGELOG.md`
+   - `pyproject.toml`
+   - runtime `__version__` strings in `runtimes/eoapi/*/eoapi/*/__init__.py`
 
-4. Create a [new release](https://github.com/developmentseed/eoapi-devseed/releases/new) targeting the new tag, and use the "Generate release notes" feature to populate the description. Publish the release and mark it as the latest
+3. Merge the release PR. Release Please tags the release (for example `0.4.0`) and publishes a GitHub release.
 
-5. The `release` will trigger a new deployement
+4. The tag push triggers the `deploy` job in [CI](.github/workflows/ci.yml).
+
+## Manual overrides
+
+- To release a specific version, add `Release-As: x.y.z` to a commit message on `main`.
+- To deploy without a release, use the `workflow_dispatch` trigger on the CI workflow.
