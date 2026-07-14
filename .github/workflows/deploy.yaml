@@ -1,0 +1,221 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git ref to deploy
+        required: false
+        type: string
+        default: ''
+      job:
+        description: Job to run (aws, hetzner, or all)
+        required: false
+        type: string
+        default: all
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to deploy (branch, tag, or SHA)
+        required: false
+        default: main
+      job:
+        description: Job to run (aws, hetzner, or all)
+        required: false
+        type: string
+        default: all
+
+jobs:
+  hetzner:
+    name: Hetzner
+    if: inputs.job == 'all' || inputs.job == 'hetzner'
+    runs-on: ubuntu-latest
+    environment: hetzner
+    env:
+      ACME_EMAIL: ${{ vars.ACME_EMAIL }}
+      COMPOSE_FILE: docker-compose.yml:docker-compose.mock-oidc.yml:infrastructure/docker-compose.hetzner.yml
+      DEPLOY_PATH: ${{ vars.HETZNER_DEPLOY_PATH || '/home/user/eoapi-devseed' }}
+      EOAPI_DOMAIN: ${{ vars.EOAPI_DOMAIN }}
+      HETZNER_HOST: ${{ vars.HETZNER_HOST }}
+      HETZNER_USER: ${{ vars.HETZNER_USER || 'user' }}
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Validate deployment configuration
+        run: |
+          missing=0
+          for name in HETZNER_HOST EOAPI_DOMAIN ACME_EMAIL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set (configure it in the hetzner environment variables)"
+              missing=1
+            fi
+          done
+          if [ -z "${{ secrets.HETZNER_SSH_KEY }}" ]; then
+            echo "::error::HETZNER_SSH_KEY is not set (configure it in the hetzner environment secrets)"
+            missing=1
+          fi
+          [ "$missing" -eq 0 ]
+
+      - name: Setup SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+        run: |
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "::error::HETZNER_SSH_KEY is empty"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          key_file=~/.ssh/deploy_key
+
+          write_key() {
+            tr -d '\r' > "$key_file"
+            chmod 600 "$key_file"
+          }
+
+          validate_key() {
+            ssh-keygen -y -f "$key_file" >/dev/null 2>&1
+          }
+
+          printf '%s' "$SSH_PRIVATE_KEY" | write_key
+          if validate_key; then
+            echo "SSH key loaded (raw multiline format)"
+          else
+            printf '%s' "$SSH_PRIVATE_KEY" | sed 's/\\n/\n/g' | write_key
+            if validate_key; then
+              echo "SSH key loaded (escaped newline format)"
+            else
+              if printf '%s' "$SSH_PRIVATE_KEY" | tr -d '\n\r ' | base64 -d 2>/dev/null | write_key && validate_key; then
+                echo "SSH key loaded (base64 format)"
+              else
+                first_line="$(printf '%s' "$SSH_PRIVATE_KEY" | head -n1)"
+                line_count="$(printf '%s' "$SSH_PRIVATE_KEY" | wc -l | tr -d ' ')"
+                echo "::error::HETZNER_SSH_KEY is not a valid private key."
+                echo "Secret diagnostics: lines=${line_count}, starts_with=${first_line:0:40}..."
+                echo
+                echo "Store the key in the hetzner environment secret using one of:"
+                echo "  A) Raw key (paste entire file, including BEGIN/END lines)"
+                echo "  B) Base64 (recommended): base64 -w0 < ~/.ssh/eoapi-deploy"
+                exit 1
+              fi
+            fi
+          fi
+
+          echo "SSH_OPTS=-i $key_file -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes" >> "$GITHUB_ENV"
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H "$HETZNER_HOST" >> ~/.ssh/known_hosts
+
+      - name: Verify Docker on server
+        run: |
+          ssh $SSH_OPTS "${HETZNER_USER}@${HETZNER_HOST}" \
+            "command -v docker >/dev/null && docker compose version" \
+          || {
+            echo "::error::Docker is not installed for ${HETZNER_USER}@${HETZNER_HOST}."
+            echo "Run scripts/hetzner-server-setup.sh on the server as root first."
+            exit 1
+          }
+
+      - name: Sync project to server
+        run: |
+          rsync -az --delete \
+            --exclude '.git' \
+            --exclude '.pgdata' \
+            --exclude '.env' \
+            --exclude '.venv' \
+            --exclude '__pycache__' \
+            -e "ssh $SSH_OPTS" \
+            ./ "${HETZNER_USER}@${HETZNER_HOST}:${DEPLOY_PATH}/"
+
+      - name: Upload .env
+        env:
+          HETZNER_ENV: ${{ secrets.HETZNER_ENV }}
+        run: |
+          if [ -n "$HETZNER_ENV" ]; then
+            printf '%s\n' "$HETZNER_ENV" > .env.deploy
+            scp $SSH_OPTS .env.deploy "${HETZNER_USER}@${HETZNER_HOST}:${DEPLOY_PATH}/.env"
+            rm .env.deploy
+          fi
+
+      - name: Deploy services
+        run: |
+          ssh $SSH_OPTS "${HETZNER_USER}@${HETZNER_HOST}" \
+            "cd '${DEPLOY_PATH}' && \
+             export COMPOSE_FILE='${COMPOSE_FILE}' && \
+             export EOAPI_DOMAIN='${EOAPI_DOMAIN}' && \
+             export ACME_EMAIL='${ACME_EMAIL}' && \
+             docker compose pull --ignore-pull-failures && \
+             docker compose up -d --build --remove-orphans && \
+             docker compose ps"
+
+      - name: Wait for services
+        run: |
+          wait_for_service() {
+            name="$1"
+            url="$2"
+
+            for _ in $(seq 1 90); do
+              if curl --fail --silent --output /dev/null "$url"; then
+                echo "$name is ready"
+                return 0
+              fi
+              sleep 2
+            done
+
+            echo "$name did not become ready at $url"
+            return 1
+          }
+
+          base="https://${EOAPI_DOMAIN}"
+          wait_for_service stac-auth-proxy "${base}/stac/_mgmt/ping"
+          wait_for_service raster "${base}/raster/healthz"
+          wait_for_service vector "${base}/vector/"
+        shell: bash
+
+  aws:
+    name: AWS (CDK)
+    if: inputs.job == 'all' || inputs.job == 'aws'
+    environment: dev
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      STACK_NAME: eoapi-dev
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Create config file
+        run: |
+          echo "${{ vars.CONFIG_YAML }}" > config.yaml
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@f79bc868ee9ca4687c7db10f05fe6a46cdcda892 # v6
+        with:
+          role-to-assume: arn:aws:iam::390960605471:role/eoapi-devseed
+          role-session-name: eoapi-devseed
+          aws-region: us-west-2
+
+      - name: Set up node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+
+      - name: Install dependencies
+        run: |
+          uv sync --only-group deploy
+          uv run --only-group deploy npm install
+
+      - name: CDK Synth
+        run: uv run --only-group deploy npx cdk synth --all
+
+      - name: CDK Deploy
+        run: uv run --only-group deploy npx cdk deploy --all --require-approval never

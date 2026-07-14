@@ -1,0 +1,94 @@
+# Production overlay: HTTPS on 80/443 via Traefik + Let's Encrypt.
+#
+# Requires DNS A records for EOAPI_DOMAIN and auth.EOAPI_DOMAIN pointing at the server.
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.mock-oidc.yml:infrastructure/docker-compose.hetzner.yml \
+#   EOAPI_DOMAIN=eoapi.centroi.de \
+#   ACME_EMAIL=you@example.com \
+#   docker compose up -d
+
+services:
+  traefik:
+    command: !override
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=eoapi-network
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:?set ACME_EMAIL}
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+    ports: !override
+      - "80:80"
+      - "443:443"
+    volumes:
+      - traefik-letsencrypt:/letsencrypt
+
+  doc-server:
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.doc-server.rule=Host(`${EOAPI_DOMAIN:?set EOAPI_DOMAIN}`) && (Path(`/`) || PathPrefix(`/assets/`) || PathPrefix(`/img/`))
+      - traefik.http.routers.doc-server.entrypoints=websecure
+      - traefik.http.routers.doc-server.tls.certresolver=letsencrypt
+      - traefik.http.services.doc-server.loadbalancer.server.port=8080
+
+  stac-browser:
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.stac-browser.rule=Host(`${EOAPI_DOMAIN}`) && PathPrefix(`/browser`)
+      - traefik.http.routers.stac-browser.entrypoints=websecure
+      - traefik.http.routers.stac-browser.tls.certresolver=letsencrypt
+      - traefik.http.services.stac-browser.loadbalancer.server.port=8080
+    environment:
+      SB_authConfig: '{"type":"openIdConnect","openIdConnectUrl":"https://auth.${EOAPI_DOMAIN}/.well-known/openid-configuration","oidcConfig":{"client_id":"stac-browser"}}'
+      EOAPI_TILE_SERVER_BASE_URL: https://${EOAPI_DOMAIN}/raster
+
+  stac:
+    environment:
+      TITILER_ENDPOINT: https://${EOAPI_DOMAIN}/raster
+
+  stac-auth-proxy:
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.stac.rule=Host(`${EOAPI_DOMAIN}`) && PathPrefix(`/stac`)
+      - traefik.http.routers.stac.entrypoints=websecure
+      - traefik.http.routers.stac.tls.certresolver=letsencrypt
+      - traefik.http.services.stac.loadbalancer.server.port=8000
+    environment:
+      OIDC_DISCOVERY_URL: https://auth.${EOAPI_DOMAIN}/.well-known/openid-configuration
+
+  raster:
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.raster.rule=Host(`${EOAPI_DOMAIN}`) && PathPrefix(`/raster`)
+      - traefik.http.routers.raster.entrypoints=websecure
+      - traefik.http.routers.raster.middlewares=raster-stripprefix
+      - traefik.http.routers.raster.tls.certresolver=letsencrypt
+      - traefik.http.middlewares.raster-stripprefix.stripprefix.prefixes=/raster
+      - traefik.http.services.raster.loadbalancer.server.port=8082
+
+  vector:
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.vector.rule=Host(`${EOAPI_DOMAIN}`) && PathPrefix(`/vector`)
+      - traefik.http.routers.vector.entrypoints=websecure
+      - traefik.http.routers.vector.middlewares=vector-stripprefix
+      - traefik.http.routers.vector.tls.certresolver=letsencrypt
+      - traefik.http.middlewares.vector-stripprefix.stripprefix.prefixes=/vector
+      - traefik.http.services.vector.loadbalancer.server.port=8083
+
+  mock-oidc:
+    ports: !reset []
+    environment:
+      ISSUER: https://auth.${EOAPI_DOMAIN}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.mock-oidc.rule=Host(`auth.${EOAPI_DOMAIN}`)
+      - traefik.http.routers.mock-oidc.entrypoints=websecure
+      - traefik.http.routers.mock-oidc.tls.certresolver=letsencrypt
+      - traefik.http.services.mock-oidc.loadbalancer.server.port=8888
+
+volumes:
+  traefik-letsencrypt:

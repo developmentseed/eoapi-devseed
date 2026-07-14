@@ -13,6 +13,7 @@ on:
       - 'docker-compose.*'
       - 'dockerfiles/**'
       - '.github/workflows/ci.yml'
+      - '.github/workflows/deploy.yaml'
       - '.github/workflows/publish-containers.yml'
       - '.pre-commit-config.yaml'
   pull_request:
@@ -121,48 +122,14 @@ jobs:
 
   deploy:
     name: Deploy
-    environment: dev
     needs: [tests]
-    permissions:
-      id-token: write
-      contents: read
-    runs-on: ubuntu-latest
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
-    env:
-      STACK_NAME: eoapi-dev
-
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
-
-      - name: Create config file
-        run: |
-          echo "${{ vars.CONFIG_YAML }}" > config.yaml
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@f79bc868ee9ca4687c7db10f05fe6a46cdcda892 # v6
-        with:
-          role-to-assume: arn:aws:iam::390960605471:role/eoapi-devseed 
-          role-session-name: eoapi-devseed
-          aws-region: us-west-2
-
-      - name: Set up node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: 20
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
-
-      - name: Install dependencies
-        run: |
-          uv sync --only-group deploy
-          uv run --only-group deploy npm install
-
-      - name: CDK Synth
-        run: uv run --only-group deploy npx cdk synth --all
-      
-      - name: CDK Deploy
-        run: |
-          uv run --only-group deploy npx cdk deploy --all --require-approval never
+    uses: ./.github/workflows/deploy.yaml
+    with:
+      job: all
+      ref: ${{ github.event.pull_request.head.sha || github.ref_name }}
+    permissions:
+      id-token: write
+      contents: read
