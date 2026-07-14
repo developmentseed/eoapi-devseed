@@ -16,9 +16,16 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 
 3. Merge the release PR. Release Please tags the release (for example `0.4.0`) and publishes a GitHub release.
 
-4. The tag push triggers the `deploy` job in [CI](.github/workflows/ci.yml).
+4. The tag push triggers [CI](.github/workflows/ci.yml). After tests pass and version consistency checks succeed, the `publish-containers` job builds and pushes the local Docker Compose images to `ghcr.io/developmentseed/eoapi-devseed/{stac,raster,vector,stac-browser}` tagged with the release version and `latest`. Images that already exist in the registry are skipped.
+
+5. The same CI run also triggers the `deploy` job for the AWS dev stack.
 
 ## Manual overrides
 
 - To release a specific version, add `Release-As: x.y.z` to a commit message on `main`.
 - To deploy without a release, use the `workflow_dispatch` trigger on the CI workflow.
+- To republish container images for an existing release tag without moving `latest`, use the `workflow_dispatch` trigger on [Publish containers](.github/workflows/publish-containers.yml).
+
+## Container registry
+
+Published images are private by default in GitHub Packages. To make them public, change package visibility under **Settings → Packages** for each image.
