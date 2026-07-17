@@ -65,6 +65,22 @@ services:
         VITE_DEFAULT_HREF: https://${EOAPI_DOMAIN}/stac
         VITE_STAC_BROWSER_URL: https://${EOAPI_DOMAIN}/browser/external/
 
+  stac-manager:
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.stac-manager.rule=Host(`${EOAPI_DOMAIN}`) && PathPrefix(`/stac-manager`)
+      - traefik.http.routers.stac-manager.entrypoints=websecure
+      - traefik.http.routers.stac-manager.middlewares=stac-manager-stripprefix
+      - traefik.http.routers.stac-manager.tls.certresolver=letsencrypt
+      - traefik.http.middlewares.stac-manager-stripprefix.stripprefix.prefixes=/stac-manager
+      - traefik.http.services.stac-manager.loadbalancer.server.port=8080
+    environment:
+      PUBLIC_URL: https://${EOAPI_DOMAIN}/stac-manager
+      REACT_APP_STAC_API: https://${EOAPI_DOMAIN}/stac
+      REACT_APP_STAC_BROWSER: https://${EOAPI_DOMAIN}/browser/external/
+      REACT_APP_OIDC_AUTHORITY: https://auth.${EOAPI_DOMAIN}
+      REACT_APP_OIDC_CLIENT_ID: stac-manager
+
   stac:
     command: !override
       - bash
