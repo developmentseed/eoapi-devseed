@@ -27,3 +27,8 @@ services:
   stac-browser:
     environment:
       SB_authConfig: '{"type":"openIdConnect","openIdConnectUrl":"http://localhost:8085/.well-known/openid-configuration","oidcConfig":{"client_id":"stac-browser"}}'
+
+  stac-manager:
+    environment:
+      REACT_APP_OIDC_AUTHORITY: http://localhost:8085
+      REACT_APP_OIDC_CLIENT_ID: stac-manager
