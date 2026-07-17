@@ -16,7 +16,7 @@ Releases are automated with [release-please](https://github.com/googleapis/relea
 
 3. Merge the release PR. Release Please tags the release (for example `0.4.0`) and publishes a GitHub release.
 
-4. The tag push triggers [CI](.github/workflows/ci.yml). After tests pass and version consistency checks succeed, the `publish-containers` job builds and pushes the local Docker Compose images to `ghcr.io/developmentseed/eoapi-devseed/{stac,raster,vector,stac-browser}` tagged with the release version and `latest`. Images that already exist in the registry are skipped.
+4. The tag push triggers [CI](.github/workflows/ci.yml). After tests pass and version consistency checks succeed, the `publish-containers` job builds and pushes the local Docker Compose images to `ghcr.io/developmentseed/eoapi-devseed/{stac,raster,vector,stac-browser,stac-map}` tagged with the release version and `latest`. Images that already exist in the registry are skipped.
 
 5. The same CI run also triggers the `deploy` job for the AWS dev stack.
 
