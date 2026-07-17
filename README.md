@@ -131,6 +131,8 @@ Then you can start exploring your dataset with:
 - the Raster service [http://localhost:8080/raster](http://localhost:8080/raster)
 - the Raster mosaic builder [http://localhost:8080/raster/searches/builder](http://localhost:8080/raster/searches/builder)
 - the browser UI [http://localhost:8080/browser](http://localhost:8080/browser)
+- the map UI [http://localhost:8080/stac-map](http://localhost:8080/stac-map)
+- the manager UI [http://localhost:8080/stac-manager](http://localhost:8080/stac-manager)
 
 Item map viewers are available at `/raster/collections/{collection_id}/items/{item_id}/viewer`, or via a redirect from the STAC API at `/stac/collections/{collection_id}/items/{item_id}/viewer`.
 

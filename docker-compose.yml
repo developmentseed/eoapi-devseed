@@ -16,6 +16,8 @@ services:
       - raster
       - vector
       - stac-browser
+      - stac-map
+      - stac-manager
 
   doc-server:
     image: nginxinc/nginx-unprivileged:alpine
@@ -55,6 +57,52 @@ services:
       - traefik.http.routers.stac-browser.rule=PathPrefix(`/browser`)
       - traefik.http.routers.stac-browser.entrypoints=web
       - traefik.http.services.stac-browser.loadbalancer.server.port=8080
+
+  stac-map:
+    build:
+      context: dockerfiles
+      dockerfile: Dockerfile.stac-map
+      args:
+        STAC_MAP_REPO: https://github.com/developmentseed/stac-map.git
+        STAC_MAP_REF: 18e91620889b8553ca78103cc7d5a25c1c5a82dd
+        VITE_BASE_PATH: "${EOAPI_STAC_MAP_PATH_PREFIX:-/stac-map/}"
+        VITE_DEFAULT_HREF: "${EOAPI_STAC_MAP_DEFAULT_HREF:-http://localhost:8080/stac}"
+        VITE_STAC_BROWSER_URL: "${EOAPI_STAC_MAP_BROWSER_URL:-http://localhost:8080/browser/external/}"
+    depends_on:
+      - stac-auth-proxy
+      - stac-browser
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stac-map.rule=PathPrefix(`/stac-map`)
+      - traefik.http.routers.stac-map.entrypoints=web
+      - traefik.http.routers.stac-map.middlewares=stac-map-stripprefix
+      - traefik.http.middlewares.stac-map-stripprefix.stripprefix.prefixes=/stac-map
+      - traefik.http.services.stac-map.loadbalancer.server.port=8080
+
+  stac-manager:
+    image: ghcr.io/developmentseed/stac-manager:1.0.3@sha256:8f9d26ed884d8a8b7e42d272f58d543bb941e5f423bba542c43bd6d317917bb2
+    environment:
+      PUBLIC_URL: "${EOAPI_STAC_MANAGER_PUBLIC_URL:-http://localhost:8080/stac-manager}"
+      REACT_APP_STAC_API: "${EOAPI_STAC_MANAGER_STAC_API:-http://localhost:8080/stac}"
+      REACT_APP_STAC_BROWSER: "${EOAPI_STAC_MANAGER_BROWSER_URL:-http://localhost:8080/browser/external/}"
+      REACT_APP_OIDC_AUTHORITY: "${EOAPI_STAC_MANAGER_OIDC_AUTHORITY:-}"
+      REACT_APP_OIDC_CLIENT_ID: "${EOAPI_STAC_MANAGER_OIDC_CLIENT_ID:-}"
+      APP_TITLE: "${EOAPI_STAC_MANAGER_TITLE:-eoAPI STAC Manager}"
+    env_file:
+      - path: .env
+        required: false
+      - path: .stac-manager.env
+        required: false
+    depends_on:
+      - stac-auth-proxy
+      - stac-browser
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stac-manager.rule=PathPrefix(`/stac-manager`)
+      - traefik.http.routers.stac-manager.entrypoints=web
+      - traefik.http.routers.stac-manager.middlewares=stac-manager-stripprefix
+      - traefik.http.middlewares.stac-manager-stripprefix.stripprefix.prefixes=/stac-manager
+      - traefik.http.services.stac-manager.loadbalancer.server.port=8080
 
   stac:
     build:
