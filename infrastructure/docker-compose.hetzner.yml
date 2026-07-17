@@ -51,6 +51,20 @@ services:
       SB_catalogUrl: https://${EOAPI_DOMAIN}/stac
       EOAPI_TILE_SERVER_BASE_URL: https://${EOAPI_DOMAIN}/raster
 
+  stac-map:
+    labels: !override
+      - traefik.enable=true
+      - traefik.http.routers.stac-map.rule=Host(`${EOAPI_DOMAIN}`) && PathPrefix(`/stac-map`)
+      - traefik.http.routers.stac-map.entrypoints=websecure
+      - traefik.http.routers.stac-map.middlewares=stac-map-stripprefix
+      - traefik.http.routers.stac-map.tls.certresolver=letsencrypt
+      - traefik.http.middlewares.stac-map-stripprefix.stripprefix.prefixes=/stac-map
+      - traefik.http.services.stac-map.loadbalancer.server.port=8080
+    build:
+      args:
+        VITE_DEFAULT_HREF: https://${EOAPI_DOMAIN}/stac
+        VITE_STAC_BROWSER_URL: https://${EOAPI_DOMAIN}/browser/external/
+
   stac:
     command: !override
       - bash
