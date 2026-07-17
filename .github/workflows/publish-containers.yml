@@ -52,6 +52,10 @@ jobs:
             context: dockerfiles
             dockerfile: dockerfiles/Dockerfile.browser
             platforms: linux/amd64,linux/arm64
+          - name: stac-map
+            context: dockerfiles
+            dockerfile: dockerfiles/Dockerfile.stac-map
+            platforms: linux/amd64,linux/arm64
 
     steps:
       - name: Resolve inputs
@@ -109,6 +113,17 @@ jobs:
           echo "repo=$(echo "$CONFIG" | jq -r '.services["stac-browser"].build.args.STAC_BROWSER_REPO')" >> "$GITHUB_OUTPUT"
           echo "ref=$(echo "$CONFIG" | jq -r '.services["stac-browser"].build.args.STAC_BROWSER_REF')" >> "$GITHUB_OUTPUT"
 
+      - name: Read stac-map build args
+        if: steps.check.outputs.skip == 'false' && matrix.name == 'stac-map'
+        id: stac-map
+        run: |
+          CONFIG=$(docker compose config --format json)
+          echo "repo=$(echo "$CONFIG" | jq -r '.services["stac-map"].build.args.STAC_MAP_REPO')" >> "$GITHUB_OUTPUT"
+          echo "ref=$(echo "$CONFIG" | jq -r '.services["stac-map"].build.args.STAC_MAP_REF')" >> "$GITHUB_OUTPUT"
+          echo "base_path=$(echo "$CONFIG" | jq -r '.services["stac-map"].build.args.VITE_BASE_PATH')" >> "$GITHUB_OUTPUT"
+          echo "default_href=$(echo "$CONFIG" | jq -r '.services["stac-map"].build.args.VITE_DEFAULT_HREF')" >> "$GITHUB_OUTPUT"
+          echo "browser_url=$(echo "$CONFIG" | jq -r '.services["stac-map"].build.args.VITE_STAC_BROWSER_URL')" >> "$GITHUB_OUTPUT"
+
       - name: Set up QEMU
         if: steps.check.outputs.skip == 'false'
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
@@ -128,7 +143,7 @@ jobs:
             type=raw,value=latest,enable=${{ steps.inputs.outputs.tag_latest == 'true' }}
 
       - name: Build and push Docker image
-        if: steps.check.outputs.skip == 'false' && matrix.name != 'stac-browser'
+        if: steps.check.outputs.skip == 'false' && matrix.name != 'stac-browser' && matrix.name != 'stac-map'
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: ${{ matrix.context }}
@@ -155,6 +170,27 @@ jobs:
           build-args: |
             STAC_BROWSER_REPO=${{ steps.browser.outputs.repo }}
             STAC_BROWSER_REF=${{ steps.browser.outputs.ref }}
+          cache-from: |
+            type=gha,scope=${{ matrix.name }}
+            type=registry,ref=${{ env.IMAGE_NAME }}:latest
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Build and push stac-map image
+        if: steps.check.outputs.skip == 'false' && matrix.name == 'stac-map'
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            STAC_MAP_REPO=${{ steps.stac-map.outputs.repo }}
+            STAC_MAP_REF=${{ steps.stac-map.outputs.ref }}
+            VITE_BASE_PATH=${{ steps.stac-map.outputs.base_path }}
+            VITE_DEFAULT_HREF=${{ steps.stac-map.outputs.default_href }}
+            VITE_STAC_BROWSER_URL=${{ steps.stac-map.outputs.browser_url }}
           cache-from: |
             type=gha,scope=${{ matrix.name }}
             type=registry,ref=${{ env.IMAGE_NAME }}:latest

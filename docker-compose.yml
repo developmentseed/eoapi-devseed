@@ -16,6 +16,7 @@ services:
       - raster
       - vector
       - stac-browser
+      - stac-map
 
   doc-server:
     image: nginxinc/nginx-unprivileged:alpine
@@ -55,6 +56,27 @@ services:
       - traefik.http.routers.stac-browser.rule=PathPrefix(`/browser`)
       - traefik.http.routers.stac-browser.entrypoints=web
       - traefik.http.services.stac-browser.loadbalancer.server.port=8080
+
+  stac-map:
+    build:
+      context: dockerfiles
+      dockerfile: Dockerfile.stac-map
+      args:
+        STAC_MAP_REPO: https://github.com/developmentseed/stac-map.git
+        STAC_MAP_REF: 18e91620889b8553ca78103cc7d5a25c1c5a82dd
+        VITE_BASE_PATH: "${EOAPI_STAC_MAP_PATH_PREFIX:-/stac-map/}"
+        VITE_DEFAULT_HREF: "${EOAPI_STAC_MAP_DEFAULT_HREF:-http://localhost:8080/stac}"
+        VITE_STAC_BROWSER_URL: "${EOAPI_STAC_MAP_BROWSER_URL:-http://localhost:8080/browser/external/}"
+    depends_on:
+      - stac-auth-proxy
+      - stac-browser
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.stac-map.rule=PathPrefix(`/stac-map`)
+      - traefik.http.routers.stac-map.entrypoints=web
+      - traefik.http.routers.stac-map.middlewares=stac-map-stripprefix
+      - traefik.http.middlewares.stac-map-stripprefix.stripprefix.prefixes=/stac-map
+      - traefik.http.services.stac-map.loadbalancer.server.port=8080
 
   stac:
     build:
