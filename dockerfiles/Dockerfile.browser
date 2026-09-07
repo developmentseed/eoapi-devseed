@@ -1,14 +1,12 @@
-# Based on https://github.com/radiantearth/stac-browser/pull/930, merged upstream.
 ARG STAC_BROWSER_REPO=https://github.com/radiantearth/stac-browser.git
-ARG STAC_BROWSER_REF=d3e189e5c99a0722c4ed98d15374d1cdc209abb7
+ARG STAC_BROWSER_REF=v5.0.0
 
 FROM node:lts-alpine AS build-step
-ARG runtimeConfig=true
 ARG historyMode="history"
 ARG SB_CONFIG=""
 ARG STAC_BROWSER_REPO
 ARG STAC_BROWSER_REF
-ENV SB_runtimeConfig="${runtimeConfig}"
+ENV DYNAMIC_CONFIG=true
 ENV SB_historyMode="${historyMode}"
 ENV SB_CONFIG="${SB_CONFIG}"
 
@@ -19,6 +17,9 @@ RUN git clone "${STAC_BROWSER_REPO}" . && \
     git checkout "${STAC_BROWSER_REF}"
 
 RUN npm install
+# Uncomment the <base>/runtime-config.js tags in index.html, which Vite (via
+# DYNAMIC_CONFIG) otherwise leaves commented out for builds with a fixed pathPrefix.
+RUN sed -i 's/<!--RC//;s/RC-->//' index.html
 RUN npm run build
 
 

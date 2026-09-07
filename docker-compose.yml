@@ -35,7 +35,7 @@ services:
       dockerfile: Dockerfile.browser
       args:
         STAC_BROWSER_REPO: https://github.com/radiantearth/stac-browser.git
-        STAC_BROWSER_REF: d3e189e5c99a0722c4ed98d15374d1cdc209abb7
+        STAC_BROWSER_REF: v5.0.0
     environment:
       SB_pathPrefix: "${EOAPI_BROWSER_PATH_PREFIX:-/browser}"
       SB_catalogUrl: "${EOAPI_STAC_BROWSER_CATALOG_URL:-/stac}"
