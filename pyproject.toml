@@ -8,18 +8,18 @@ dependencies = []
 
 [dependency-groups]
 deploy = [
-    "aws-cdk-lib==2.220.0",
-    "boto3==1.24.15",
-    "eoapi-cdk==10.4.2",
-    "pydantic-settings[yaml]==2.2.1",
-    "pydantic==2.7",
+    "aws-cdk-lib==2.266.0",
+    "boto3==1.43.78",
+    "eoapi-cdk==11.6.4",
+    "pydantic-settings[yaml]==2.15.0",
+    "pydantic==2.13.4",
     "typing-extensions>=4.12.2",
 ]
 dev = [
     "httpx>=0.28.1",
     "pre-commit>=4.1.0",
     "psycopg[pool]>=3.2.4",
-    "pypgstac==0.9.9",
+    "pypgstac==0.9.12",
     "pytest>=8.3.4",
 ]
 load = [
