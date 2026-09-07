@@ -46,6 +46,7 @@ from titiler.pgstac.factory import (
     add_search_list_route,
     add_search_register_route,
 )
+from titiler.pgstac.metrics import instrument_app
 from titiler.pgstac.reader import PgSTACReader
 
 from . import __version__ as eoapi_raster_version
@@ -578,3 +579,5 @@ if auth_settings.openid_configuration_url:
             for prefix in restricted_prefixes
         ):
             oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
+
+instrument_app(app)

@@ -70,11 +70,11 @@ class PostgresSettings(_PostgresSettings):
             secret = get_secret_dict(arn)
             data.update(
                 {
-                    "postgres_host": secret["host"],
-                    "postgres_dbname": secret["dbname"],
-                    "postgres_user": secret["username"],
-                    "postgres_pass": secret["password"],
-                    "postgres_port": secret["port"],
+                    "pghost": secret["host"],
+                    "pgdatabase": secret["dbname"],
+                    "pguser": secret["username"],
+                    "pgpassword": secret["password"],
+                    "pgport": secret["port"],
                 }
             )
 
