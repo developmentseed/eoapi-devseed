@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0](https://github.com/developmentseed/eoapi-devseed/compare/0.4.0...0.5.0) (2026-09-07)
+
+
+### Added
+
+* added landing page. ([57373dd](https://github.com/developmentseed/eoapi-devseed/commit/57373dd5c0be6583eeab85d05cfcd535a0d6d104))
+* added monitoring. ([#86](https://github.com/developmentseed/eoapi-devseed/issues/86)) ([febb85e](https://github.com/developmentseed/eoapi-devseed/commit/febb85ed3a03f2b856ec4d167d6b6c3fb1a3ecc3))
+
+
+### Fixed
+
+* aws deployment. ([8661745](https://github.com/developmentseed/eoapi-devseed/commit/8661745f9f48ef2c19e867ebe302e6cc888e9c0c))
+
+
+### Maintenance
+
+* **ci:** deploy docker-compose. ([#72](https://github.com/developmentseed/eoapi-devseed/issues/72)) ([4ea08f5](https://github.com/developmentseed/eoapi-devseed/commit/4ea08f5b88e08b7dd68293721e645e333b0a45ba))
+* **ci:** ingest data for hetzner deploy. ([73cd5d5](https://github.com/developmentseed/eoapi-devseed/commit/73cd5d5d6ab1ee5fe989f5b6d676eda5d6efc006))
+* **ci:** ingest data for hetzner deploy. ([fcfc5a3](https://github.com/developmentseed/eoapi-devseed/commit/fcfc5a36232d0fe4ce484d86398ca50a1c5d19fd))
+* **deps-dev:** bump the python group with 9 updates ([#84](https://github.com/developmentseed/eoapi-devseed/issues/84)) ([a801dbf](https://github.com/developmentseed/eoapi-devseed/commit/a801dbfdf35e7394849c590b38e63abbd1467a23))
+* **deps:** bump aws-cdk from 2.1131.0 to 2.1132.0 ([#74](https://github.com/developmentseed/eoapi-devseed/issues/74)) ([6fefacd](https://github.com/developmentseed/eoapi-devseed/commit/6fefacdccea8a2b21df5109a0cc58285c381401f))
+* **deps:** bump aws-cdk from 2.1132.0 to 2.1139.0 ([#85](https://github.com/developmentseed/eoapi-devseed/issues/85)) ([98ca67f](https://github.com/developmentseed/eoapi-devseed/commit/98ca67f2d2136c911db25b87dbdd6916ce23faca))
+* **deps:** bump developmentseed/stac-auth-proxy from v1.1.1 to v1.2.0 ([#76](https://github.com/developmentseed/eoapi-devseed/issues/76)) ([87b5ff0](https://github.com/developmentseed/eoapi-devseed/commit/87b5ff0ca4dddd6de0b18b20066244533fd3bcd5))
+* **deps:** bump the github-actions group across 1 directory with 4 updates ([#83](https://github.com/developmentseed/eoapi-devseed/issues/83)) ([9a4edc9](https://github.com/developmentseed/eoapi-devseed/commit/9a4edc981ceb29382a9ed28c39b348efa081e33b))
+* **deps:** bump the github-actions group with 4 updates ([#75](https://github.com/developmentseed/eoapi-devseed/issues/75)) ([52aece4](https://github.com/developmentseed/eoapi-devseed/commit/52aece4fcf80c236b3c1c3ef2ce6d2d6af3a5263))
+* **deps:** pin pypgstac to 0.9.11 to match pgstac v0.9.11 image ([#87](https://github.com/developmentseed/eoapi-devseed/issues/87)) ([b3b341d](https://github.com/developmentseed/eoapi-devseed/commit/b3b341d79385d532e6ee4b4113f10f3aef539319))
+* improve some wording on landing page. ([ce0e71e](https://github.com/developmentseed/eoapi-devseed/commit/ce0e71e95a52c18ef36d610d43c89446b6fd92dc))
+
 ## [0.4.0](https://github.com/developmentseed/eoapi-devseed/compare/0.3.4...0.4.0) (2026-07-14)
 
 
