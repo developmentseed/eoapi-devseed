@@ -1,7 +1,6 @@
-# Based on https://github.com/radiantearth/stac-browser/pull/930
-# Commit lives on the PR author's fork until merged upstream.
-ARG STAC_BROWSER_REPO=https://github.com/pantierra/stac-browser.git
-ARG STAC_BROWSER_REF=9c299f43c7d8506d5b655c0a1de3924ba38a1f63
+# Based on https://github.com/radiantearth/stac-browser/pull/930, merged upstream.
+ARG STAC_BROWSER_REPO=https://github.com/radiantearth/stac-browser.git
+ARG STAC_BROWSER_REF=d3e189e5c99a0722c4ed98d15374d1cdc209abb7
 
 FROM node:lts-alpine AS build-step
 ARG runtimeConfig=true
