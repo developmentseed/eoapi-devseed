@@ -34,8 +34,8 @@ services:
       context: dockerfiles
       dockerfile: Dockerfile.browser
       args:
-        STAC_BROWSER_REPO: https://github.com/pantierra/stac-browser.git
-        STAC_BROWSER_REF: 9c299f43c7d8506d5b655c0a1de3924ba38a1f63
+        STAC_BROWSER_REPO: https://github.com/radiantearth/stac-browser.git
+        STAC_BROWSER_REF: v5.0.0
     environment:
       SB_pathPrefix: "${EOAPI_BROWSER_PATH_PREFIX:-/browser}"
       SB_catalogUrl: "${EOAPI_STAC_BROWSER_CATALOG_URL:-/stac}"
@@ -143,7 +143,7 @@ services:
       - ./dockerfiles/scripts:/tmp/scripts
 
   stac-auth-proxy:
-    image: ghcr.io/developmentseed/stac-auth-proxy:v1.1.1@sha256:c827a67bfd8e2eee6ed5be46d1a99d3aca307e18f154316e719d2332d15ea4ef
+    image: ghcr.io/developmentseed/stac-auth-proxy:v1.2.0@sha256:3f0969d16badabd0212c0e7c462209490841ad4a342b9da1c2953ae56da21c11
     environment:
       UPSTREAM_URL: http://stac:8081
       OIDC_DISCOVERY_URL: ${EOAPI_AUTH_OIDC_DISCOVERY_URL:-}
@@ -173,11 +173,11 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       # Application
-      - POSTGRES_USER=username
-      - POSTGRES_PASS=password
-      - POSTGRES_DBNAME=postgis
-      - POSTGRES_HOST=database
-      - POSTGRES_PORT=5432
+      - PGUSER=username
+      - PGPASSWORD=password
+      - PGDATABASE=postgis
+      - PGHOST=database
+      - PGPORT=5432
       - DB_MIN_CONN_SIZE=1
       - DB_MAX_CONN_SIZE=10
       - CPL_TMPDIR=/tmp

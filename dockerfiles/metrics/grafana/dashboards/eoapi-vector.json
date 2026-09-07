@@ -156,7 +156,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=\"vector\", operation!=\"\"}[5m]))",
+          "expr": "sum(rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]))",
           "refId": "A"
         }
       ],
@@ -218,7 +218,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (sum(rate(http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(http_requests_total{job=\"vector\", operation!=\"\"}[5m])), 0.001)",
+          "expr": "100 * (sum(rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m])), 0.001)",
           "refId": "A"
         }
       ],
@@ -280,7 +280,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (sum(rate(http_requests_total{job=\"vector\", operation!=\"\", status=\"5xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(http_requests_total{job=\"vector\", operation!=\"\"}[5m])), 0.001)",
+          "expr": "100 * (sum(rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"5xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m])), 0.001)",
           "refId": "A"
         }
       ],
@@ -331,7 +331,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(tipg_http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m])))",
           "refId": "A"
         }
       ],
@@ -422,7 +422,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (status) (rate(http_requests_total{job=\"vector\", operation!=\"\"}[5m]))",
+          "expr": "sum by (status) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]))",
           "legendFormat": "{{status}}",
           "refId": "A"
         }
@@ -471,7 +471,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (operation) (rate(http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])) or (0 * sum by (operation) (rate(http_requests_total{job=\"vector\", operation!=\"\"}[5m])))",
+          "expr": "sum by (operation) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])) or (0 * sum by (operation) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m])))",
           "legendFormat": "{{operation}}",
           "refId": "A"
         }
@@ -520,7 +520,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (operation) (rate(http_requests_total{job=\"vector\", operation!=\"\", status=\"5xx\"}[5m])) or (0 * sum by (operation) (rate(http_requests_total{job=\"vector\", operation!=\"\"}[5m])))",
+          "expr": "sum by (operation) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"5xx\"}[5m])) or (0 * sum by (operation) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m])))",
           "legendFormat": "{{operation}}",
           "refId": "A"
         }
@@ -624,14 +624,14 @@
       },
       "targets": [
         {
-          "expr": "sum by (operation, method) (rate(http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m]))",
+          "expr": "sum by (operation, method) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m]))",
           "format": "table",
           "instant": true,
           "range": false,
           "refId": "A"
         },
         {
-          "expr": "100 * sum by (operation, method) (rate(http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])) / clamp_min(sum(rate(http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])), 0.001)",
+          "expr": "100 * sum by (operation, method) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])) / clamp_min(sum(rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m])), 0.001)",
           "format": "table",
           "instant": true,
           "range": false,
@@ -722,7 +722,7 @@
       },
       "targets": [
         {
-          "expr": "topk(10, histogram_quantile(0.95, sum by (operation, le) (rate(http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m]))))",
+          "expr": "topk(10, histogram_quantile(0.95, sum by (operation, le) (rate(tipg_http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m]))))",
           "legendFormat": "{{operation}}",
           "refId": "A"
         }
@@ -783,7 +783,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (operation) (rate(http_requests_total{job=\"vector\", operation!=\"\"}[5m]))",
+          "expr": "sum by (operation) (rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]))",
           "legendFormat": "{{operation}}",
           "refId": "A"
         }
@@ -828,12 +828,12 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(tipg_http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m])))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(tipg_http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m])))",
           "legendFormat": "p95",
           "refId": "B"
         }

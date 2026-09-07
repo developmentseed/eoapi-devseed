@@ -101,7 +101,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=~\"stac-auth-proxy|raster|vector\", operation!=\"\"}[5m]))",
+          "expr": "sum(rate(http_requests_total{job=\"stac-auth-proxy\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m]))",
           "refId": "A"
         }
       ],
@@ -163,7 +163,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (sum(rate(http_requests_total{job=~\"stac-auth-proxy|raster|vector\", operation!=\"\", status=\"4xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(http_requests_total{job=~\"stac-auth-proxy|raster|vector\", operation!=\"\"}[5m])), 0.001)",
+          "expr": "100 * (sum(rate(http_requests_total{job=\"stac-auth-proxy\", operation!=\"\", status=\"4xx\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\", status=\"4xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(http_requests_total{job=\"stac-auth-proxy\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m])), 0.001)",
           "refId": "A"
         }
       ],
@@ -225,7 +225,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (sum(rate(http_requests_total{job=~\"stac-auth-proxy|raster|vector\", operation!=\"\", status=\"5xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(http_requests_total{job=~\"stac-auth-proxy|raster|vector\", operation!=\"\"}[5m])), 0.001)",
+          "expr": "100 * (sum(rate(http_requests_total{job=\"stac-auth-proxy\", operation!=\"\", status=\"5xx\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"5xx\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\", status=\"5xx\"}[5m])) or on() vector(0)) / clamp_min(sum(rate(http_requests_total{job=\"stac-auth-proxy\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m])), 0.001)",
           "refId": "A"
         }
       ],
@@ -276,7 +276,7 @@
       },
       "targets": [
         {
-          "expr": "max(histogram_quantile(0.95, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~\"stac-auth-proxy|raster|vector\", operation!=\"\"}[5m]))))",
+          "expr": "max(histogram_quantile(0.95, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=\"stac-auth-proxy\", operation!=\"\"}[5m]) or rate(tipg_http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_request_duration_seconds_bucket{job=\"raster\", operation!=\"\"}[5m]))))",
           "refId": "A"
         }
       ],
@@ -332,7 +332,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\"}[5m]))",
+          "expr": "sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m]))",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -377,7 +377,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\", status=\"4xx\"}[5m])) or on(job) (0 * sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\"}[5m])))) / clamp_min(sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\"}[5m])), 0.001)",
+          "expr": "100 * (sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac\", operation!=\"\", status=\"4xx\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"4xx\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\", status=\"4xx\"}[5m])) or on(job) (0 * sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m])))) / clamp_min(sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m])), 0.001)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -422,7 +422,7 @@
       },
       "targets": [
         {
-          "expr": "100 * (sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\", status=\"5xx\"}[5m])) or on(job) (0 * sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\"}[5m])))) / clamp_min(sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\"}[5m])), 0.001)",
+          "expr": "100 * (sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac\", operation!=\"\", status=\"5xx\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\", status=\"5xx\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\", status=\"5xx\"}[5m])) or on(job) (0 * sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m])))) / clamp_min(sum by (job) (rate(http_requests_total{job=~\"stac-auth-proxy|stac\", operation!=\"\"}[5m]) or rate(tipg_http_requests_total{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_requests_total{job=\"raster\", operation!=\"\"}[5m])), 0.001)",
           "legendFormat": "{{job}}",
           "refId": "A"
         }
@@ -467,7 +467,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~\"stac-auth-proxy|stac|raster|vector\", operation!=\"\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (job, le) (rate(http_request_duration_seconds_bucket{job=~\"stac-auth-proxy|stac\", operation!=\"\"}[5m]) or rate(tipg_http_request_duration_seconds_bucket{job=\"vector\", operation!=\"\"}[5m]) or rate(titiler_pgstac_http_request_duration_seconds_bucket{job=\"raster\", operation!=\"\"}[5m])))",
           "legendFormat": "{{job}}",
           "refId": "A"
         }

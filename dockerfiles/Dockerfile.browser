@@ -1,25 +1,25 @@
-# Based on https://github.com/radiantearth/stac-browser/pull/930
-# Commit lives on the PR author's fork until merged upstream.
-ARG STAC_BROWSER_REPO=https://github.com/pantierra/stac-browser.git
-ARG STAC_BROWSER_REF=9c299f43c7d8506d5b655c0a1de3924ba38a1f63
+# Requires stac-browser >=5.0.0, which lets SB_pathPrefix (and other config)
+# be set at container startup via DYNAMIC_CONFIG (radiantearth/stac-browser#930).
+ARG STAC_BROWSER_REPO=https://github.com/radiantearth/stac-browser.git
+ARG STAC_BROWSER_REF=v5.0.0
 
 FROM node:lts-alpine AS build-step
-ARG runtimeConfig=true
+ARG DYNAMIC_CONFIG=true
 ARG historyMode="history"
 ARG SB_CONFIG=""
 ARG STAC_BROWSER_REPO
 ARG STAC_BROWSER_REF
-ENV SB_runtimeConfig="${runtimeConfig}"
+ENV DYNAMIC_CONFIG="${DYNAMIC_CONFIG}"
 ENV SB_historyMode="${historyMode}"
 ENV SB_CONFIG="${SB_CONFIG}"
 
 WORKDIR /app
 
 RUN apk add --no-cache git
-RUN git clone "${STAC_BROWSER_REPO}" . && \
-    git checkout "${STAC_BROWSER_REF}"
+RUN git clone --branch "${STAC_BROWSER_REF}" --depth 1 "${STAC_BROWSER_REPO}" .
 
 RUN npm install
+RUN [ "${DYNAMIC_CONFIG}" = "true" ] && sed -i 's/<!--RC//;s/RC-->//' index.html
 RUN npm run build
 
 

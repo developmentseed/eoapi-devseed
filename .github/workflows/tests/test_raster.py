@@ -28,7 +28,7 @@ def test_raster_api():
 
 def test_mosaic_api():
     """test mosaic."""
-    query = {"collections": ["noaa-emergency-response"], "filter-lang": "cql-json"}
+    query = {"collections": ["noaa-emergency-response"], "filter-lang": "cql2-json"}
     resp = httpx.post(f"{raster_endpoint}/searches/register", json=query)
     assert resp.headers["content-type"] == "application/json"
     assert resp.status_code == 200

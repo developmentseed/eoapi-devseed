@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import jinja2
 from eoapi.auth_utils import OpenIdConnectAuth, OpenIdConnectSettings
 from fastapi import APIRouter, FastAPI
+from stac_fastapi.api.metrics import register_operations
 from stac_fastapi.api.models import (
     CollectionUri,
     ItemCollectionUri,
@@ -229,17 +230,16 @@ api = StacApi(
     search_post_request_model=search_post_model,
     response_class=JSONResponse,
     middlewares=middlewares,
+    add_metrics=True,
 )
 app = api.app
 
-try:
-    from .metrics import instrument_app
-
-    instrument_app(app)
-except ImportError:
-    logger.warning(
-        "prometheus-fastapi-instrumentator not installed; metrics endpoint disabled"
-    )
+register_operations(
+    {
+        ("GET", "/viewer"): "viewer",
+        ("GET", "/collections/{collection_id}/items/{item_id}/viewer"): "item_viewer",
+    }
+)
 
 
 @app.get("/viewer", response_class=HTMLResponse)

@@ -46,6 +46,7 @@ from titiler.pgstac.factory import (
     add_search_list_route,
     add_search_register_route,
 )
+from titiler.pgstac.metrics import instrument_app
 from titiler.pgstac.reader import PgSTACReader
 
 from . import __version__ as eoapi_raster_version
@@ -579,11 +580,4 @@ if auth_settings.openid_configuration_url:
         ):
             oidc_auth.apply_auth_dependencies(route, required_token_scopes=[])
 
-try:
-    from .metrics import instrument_app
-
-    instrument_app(app)
-except ImportError:
-    logger.warning(
-        "prometheus-fastapi-instrumentator not installed; metrics endpoint disabled"
-    )
+instrument_app(app)
