@@ -261,7 +261,7 @@ services:
       - ./dockerfiles/scripts:/tmp/scripts
 
   database:
-    image: ghcr.io/stac-utils/pgstac:v0.9.11
+    image: ghcr.io/stac-utils/pgstac:v0.10.0
     environment:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
