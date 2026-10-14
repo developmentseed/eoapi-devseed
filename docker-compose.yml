@@ -143,7 +143,7 @@ services:
       - ./dockerfiles/scripts:/tmp/scripts
 
   stac-auth-proxy:
-    image: ghcr.io/developmentseed/stac-auth-proxy:v1.2.0@sha256:3f0969d16badabd0212c0e7c462209490841ad4a342b9da1c2953ae56da21c11
+    image: ghcr.io/developmentseed/stac-auth-proxy:v1.3.0@sha256:cc1f9d7dc31f686f51f0f25c7dc8ca495d40bf1b7b4d2912116251e19f6d93ca
     environment:
       UPSTREAM_URL: http://stac:8081
       OIDC_DISCOVERY_URL: ${EOAPI_AUTH_OIDC_DISCOVERY_URL:-}
