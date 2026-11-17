@@ -80,7 +80,7 @@ services:
       - traefik.http.services.stac-map.loadbalancer.server.port=8080
 
   stac-manager:
-    image: ghcr.io/developmentseed/stac-manager:1.0.3@sha256:8f9d26ed884d8a8b7e42d272f58d543bb941e5f423bba542c43bd6d317917bb2
+    image: ghcr.io/developmentseed/stac-manager:1.0.4@sha256:692c004485051a2f0058273b1282299d5a37c9c2147ecc214542fefe4a8e7276
     environment:
       PUBLIC_URL: "${EOAPI_STAC_MANAGER_PUBLIC_URL:-http://localhost:8080/stac-manager}"
       REACT_APP_STAC_API: "${EOAPI_STAC_MANAGER_STAC_API:-http://localhost:8080/stac}"
